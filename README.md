@@ -1,0 +1,2 @@
+# DeepSeek Desktop
+- This project is still in development and there are many more features to come, there may be unnecessary overlays made during the development process, please make issues for suggestions/bugs

@@ -1,0 +1,5 @@
+# Ignore build artifacts/cookies
+/build
+/zipped
+/data
+/built
