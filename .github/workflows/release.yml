@@ -64,11 +64,21 @@ jobs:
                 -Body $body
             
             $message = $response.choices[0].message.content
-            echo "fun_message=$message" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            
+            # Use EOF delimiter for multiline strings
+            @"
+fun_message<<EOF
+$message
+EOF
+"@ | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         } catch {
             # Fallback to simple message if API fails
             $fallback = "🎉 DeepSeek Desktop $($env:VERSION) is here! Get ready for an awesome experience!"
-            echo "fun_message=$fallback" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            @"
+fun_message<<EOF
+$fallback
+EOF
+"@ | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
             Write-Error "Pollinations API call failed: $_"
         }
 
