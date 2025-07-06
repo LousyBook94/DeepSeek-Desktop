@@ -2,6 +2,9 @@ name: Release Build
 
 on: workflow_dispatch
 
+env:
+  VERSION: "0.1"
+
 jobs:
   build-and-release:
     runs-on: windows-latest
@@ -25,12 +28,63 @@ jobs:
     - name: Build application
       run: python build.py
 
+    - name: Get commit messages
+      id: commits
+      run: |
+        # Get last release tag
+        $last_tag = git describe --tags --abbrev=0
+        # Get all commits since last release
+        $commits = git log --pretty=format:'- %s' $last_tag..HEAD
+        echo "changelog=$commits" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+    - name: Generate fun release message
+      id: fun_message
+      run: |
+        # Call Pollinations API to generate fun release message
+        $body = @{
+            model = "openai"
+            messages = @(
+                @{
+                    role = "system"
+                    content = "You are a creative release note writer who specializes in fun, engaging release announcements with emojis"
+                }
+                @{
+                    role = "user"
+                    content = "Write a fun, creative release announcement for DeepSeek Desktop version $($env:VERSION) with emojis. Make it exciting and celebratory!"
+                }
+            )
+            temperature = 0.7
+            max_tokens = 150
+        } | ConvertTo-Json
+
+        try {
+            $response = Invoke-RestMethod -Uri "https://text.pollinations.ai/openai" `
+                -Method POST `
+                -ContentType "application/json" `
+                -Body $body
+            
+            $message = $response.choices[0].message.content
+            echo "fun_message=$message" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        } catch {
+            # Fallback to simple message if API fails
+            $fallback = "🎉 DeepSeek Desktop $($env:VERSION) is here! Get ready for an awesome experience!"
+            echo "fun_message=$fallback" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Error "Pollinations API call failed: $_"
+        }
+
+    - name: Rename build.zip to windows.zip
+      run: Rename-Item -Path .\zipped\build.zip -NewName windows.zip
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v${{ github.run_number }}
-        name: Release v${{ github.run_number }}
-        body: Automated release from GitHub Actions
+        tag_name: v${{ env.VERSION }}
+        name: DeepSeek Desktop V${{ env.VERSION }}
+        body: |
+          ${{ steps.fun_message.outputs.fun_message }}
+
+          **Changelog:**
+          ${{ steps.commits.outputs.changelog }}
         draft: false
         prerelease: false
-        files: zipped/build.zip
+        files: zipped/windows.zip
