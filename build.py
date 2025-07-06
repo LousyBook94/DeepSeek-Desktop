@@ -9,8 +9,8 @@ def build_app():
     if not os.path.exists("injection"):
         print("Error: injection directory not found!")
         return
-    if not os.path.exists("deepseek.png"):
-        print("Error: deepseek.png icon not found!")
+    if not os.path.exists("deepseek.ico"):
+        print("Error: deepseek.ico icon not found!")
         return
     
     # Create clean build directories
@@ -27,7 +27,7 @@ def build_app():
     os.makedirs(dist_dir, exist_ok=True)
     
     # Get absolute path to icon
-    icon_path = os.path.abspath("deepseek.png")
+    icon_path = os.path.abspath("deepseek.ico")
     
     # PyInstaller command with absolute icon path
     cmd = [
@@ -56,7 +56,7 @@ def build_app():
     # Define resources to copy to built directory
     resources_to_copy = [
         ("injection", "injection"),  # (source, destination)
-        ("deepseek.png", "deepseek.png")
+        ("deepseek.ico", "deepseek.ico")
     ]
     
     # Copy resources
