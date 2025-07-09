@@ -3,7 +3,7 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1"
+  VERSION: "0.1.5"
   MESSAGE: "Yay V{0} released!! 🎊🥳🎉✨" # Using {0} as a simple placeholder
 
 jobs:
