@@ -1,6 +1,7 @@
 import webview
 import os
 import argparse
+import sys
 
 def inject_js(window):
     try:
