@@ -3,7 +3,7 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1.5"
+  VERSION: "0.1.51"
   MESSAGE: "Yay V{0} released!! 🎊🥳🎉✨" # Using {0} as a simple placeholder
 
 jobs:
@@ -46,8 +46,8 @@ jobs:
         $finalMessage = $rawMessage.Replace("{0}", $version)
         echo "final_message=$finalMessage" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-    - name: Rename build.zip to windows.zip
-      run: Rename-Item -Path .\zipped\build.zip -NewName windows.zip
+    - name: Rename build.zip to DeepSeekChat-windows.zip
+      run: Rename-Item -Path .\zipped\build.zip -NewName DeepSeekChat-windows.zip
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
@@ -61,4 +61,4 @@ jobs:
           ${{ steps.commits.outputs.changelog }}
         draft: false
         prerelease: false
-        files: zipped/windows.zip
+        files: zipped/DeepSeekChat-windows.zip
