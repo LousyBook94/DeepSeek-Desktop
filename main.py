@@ -24,13 +24,24 @@ def main():
     is_frozen = getattr(sys, 'frozen', False)
     release_mode = args.release or is_frozen
     
+    # Launch auto-updater in background
+    try:
+        import subprocess
+        import os
+        updater_path = os.path.join(os.path.dirname(__file__), 'auto-update.bat')
+        if os.path.exists(updater_path):
+            subprocess.Popen([updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    except Exception as e:
+        print("Failed to launch auto updater : ", e)
+        pass  # Silently continue if updater fails to launch
+    
     # Create window with persistent cookie storage
     window = webview.create_window(
         "DeepSeek - Into the Unknown",
         "https://chat.deepseek.com",
         width=1200,
         height=800,
-        text_select=True # Enable selecting text (#1 vanja-san)
+        text_select=True # Enable selecting text (#2 vanja-san)
     )
     
     # Add event listener for page load
