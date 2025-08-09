@@ -3,6 +3,33 @@ import shutil
 import subprocess
 import sys
 import zipfile  # For creating build.zip
+import re  # For parsing version from workflow file
+
+def get_version_from_workflow():
+    """Extract version from GitHub workflow file"""
+    workflow_path = ".github/workflows/release.yml"
+    
+    if not os.path.exists(workflow_path):
+        print(f"Warning: {workflow_path} not found, using default version")
+        return "0.0.0"
+    
+    try:
+        with open(workflow_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Look for VERSION: "x.x.x" pattern
+        version_match = re.search(r'VERSION:\s*["\']([^"\']+)["\']', content)
+        if version_match:
+            version = version_match.group(1)
+            print(f"Found version in workflow: {version}")
+            return version
+        else:
+            print("Warning: VERSION not found in workflow file, using default")
+            return "0.0.0"
+            
+    except Exception as e:
+        print(f"Error reading workflow file: {e}")
+        return "0.0.0"
 
 def build_app():
     # Ensure required files exist
@@ -53,10 +80,18 @@ def build_app():
     # Clean up temporary build artifacts
     shutil.rmtree(temp_dir, ignore_errors=True)
     
+    # Create version.txt file for auto-updater
+    version = get_version_from_workflow()
+    version_file_path = os.path.join(dist_dir, "version.txt")
+    with open(version_file_path, 'w') as f:
+        f.write(version)
+    print(f"Created version.txt with version: {version}")
+    
     # Define resources to copy to built directory
     resources_to_copy = [
         ("injection", "injection"),  # (source, destination)
-        ("deepseek.ico", "deepseek.ico")
+        ("deepseek.ico", "deepseek.ico"),
+        ("auto-update.bat", "auto-update.bat")
     ]
     
     # Copy resources
