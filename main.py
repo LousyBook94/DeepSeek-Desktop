@@ -29,7 +29,8 @@ def main():
         "DeepSeek - Into the Unknown",
         "https://chat.deepseek.com",
         width=1200,
-        height=800
+        height=800,
+        text_select=True # Enable selecting text (#1 vanja-san)
     )
     
     # Add event listener for page load
