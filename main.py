@@ -110,7 +110,8 @@ def apply_dark_titlebar(window):
         
         if hwnd:
             # Constants for DwmSetWindowAttribute
-            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            DWMWA_USE_IMMERSIVE_DARK_MODE_NEW = 20  # Win10 1903+
+            DWMWA_USE_IMMERSIVE_DARK_MODE_OLD = 19  # Win10 1809 and earlier
             
             # Load dwmapi.dll
             dwmapi = ctypes.windll.dwmapi
@@ -119,12 +120,22 @@ def apply_dark_titlebar(window):
             use_dark = should_use_dark_titlebar()
             dark_mode = ctypes.c_int(1 if use_dark else 0)
             
+            # Try new attribute value first
             result = dwmapi.DwmSetWindowAttribute(
                 ctypes.c_void_p(hwnd),
-                ctypes.c_int(DWMWA_USE_IMMERSIVE_DARK_MODE),
+                ctypes.c_int(DWMWA_USE_IMMERSIVE_DARK_MODE_NEW),
                 ctypes.byref(dark_mode),
                 ctypes.sizeof(dark_mode)
             )
+            
+            # Fallback to old attribute value on failure
+            if result != 0:
+                result = dwmapi.DwmSetWindowAttribute(
+                    ctypes.c_void_p(hwnd),
+                    ctypes.c_int(DWMWA_USE_IMMERSIVE_DARK_MODE_OLD),
+                    ctypes.byref(dark_mode),
+                    ctypes.sizeof(dark_mode)
+                )
             
             if result == 0:  # S_OK
                 mode_str = 'dark' if use_dark else 'light'

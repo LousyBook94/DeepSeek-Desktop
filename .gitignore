@@ -3,3 +3,10 @@
 /zipped
 /data
 /built
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+
+# Local helper dumps
+webview_help.txt
