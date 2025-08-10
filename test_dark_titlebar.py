@@ -8,37 +8,26 @@ import platform
 from main import is_dark_mode_enabled, should_use_dark_titlebar
 
 def test_dark_mode_detection():
-    """Test the dark mode detection functionality"""
-    print("=== Dark Titlebar Test ===")
-    print(f"Platform: {platform.system()}")
-    print(f"Python version: {sys.version}")
-    
-    if platform.system() == "Windows":
-        print("\n--- Windows Dark Mode Detection ---")
-        try:
-            dark_mode = is_dark_mode_enabled()
-            print(f"System dark mode enabled: {dark_mode}")
-        except Exception as e:
-            print(f"Error detecting dark mode: {e}")
-    else:
-        print(f"Dark mode detection is Windows-only (current: {platform.system()})")
-    
-    print("\n--- Titlebar Preference Testing ---")
-    
-    # Test auto mode
+    """Basic assertions for titlebar preference logic; dark mode detection only on Windows."""
     import main
+    # preference: auto -> echoes system value (don’t assert specific value cross-platform)
     main.titlebar_preference = 'auto'
-    print(f"Auto mode - should use dark titlebar: {should_use_dark_titlebar()}")
-    
-    # Test forced dark mode
+    _ = should_use_dark_titlebar()
+
+    # preference: dark
     main.titlebar_preference = 'dark'
-    print(f"Forced dark mode - should use dark titlebar: {should_use_dark_titlebar()}")
-    
-    # Test forced light mode
+    assert should_use_dark_titlebar() is True
+
+    # preference: light
     main.titlebar_preference = 'light'
-    print(f"Forced light mode - should use dark titlebar: {should_use_dark_titlebar()}")
-    
-    print("\n--- Test Complete ---")
+    assert should_use_dark_titlebar() is False
+
+    # Windows-only: ensure detector does not crash
+    if platform.system() == "Windows":
+        try:
+            _ = is_dark_mode_enabled()
+        except Exception as e:
+            raise AssertionError(f"is_dark_mode_enabled raised unexpectedly: {e}")
 
 if __name__ == "__main__":
     test_dark_mode_detection()
