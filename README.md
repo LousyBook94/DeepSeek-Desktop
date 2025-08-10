@@ -30,6 +30,9 @@ This desktop application enhances your DeepSeek chat experience with:
   - Automatically matches Windows system theme
   - Manual override options available
 - 🔃 **Auto Updater**
+- 핫 **Hotkeys**:
+  - `Ctrl+Shift+T`: Toggle "Always on Top" mode.
+  - `Ctrl+O`: Open a new chat window.
 
 ## Advanced Usage 🔧
 For advanced users, you can customize the application behavior:
@@ -49,10 +52,13 @@ The titlebar will automatically match your Windows system theme by default. If y
 
 ## Future Plans 🔮
 - [x] ~~Dark titlebar support~~ ✅ **Completed!**
+- [x] ~~Keyboard shortcuts~~ ✅ **Completed!**
 - [ ] Custom theme support for the entire interface
-- [ ] Keyboard shortcuts
 - [ ] Cross-platform builds (Mac/Linux)
 - [ ] System tray integration
+
+## Customization & Contributing 🎨
+This application is designed to be customizable. Power users can modify the `injection/inject.js` file to add their own CSS or JavaScript enhancements. If you create a cool or useful feature, feel free to open a pull request and contribute back to the project!
 
 ## Connect with Me 👋
 - [YouTube](https://youtube.com/@LousyBook01)

@@ -3,8 +3,8 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1.57"
-  MESSAGE: "🌙 V{0} released with Dark Titlebar support! Now matches your Windows theme automatically ✨🎉" # Using {0} as a simple placeholder
+  VERSION: "0.1.62"
+  MESSAGE: "🚀 V{0} released with Hotkeys, Code Refactoring, and more! See changelog for details. ✨" # Using {0} as a simple placeholder
 
 jobs:
   build-and-release:
@@ -32,11 +32,24 @@ jobs:
     - name: Get commit messages
       id: commits
       run: |
-        # Get last release tag
-        $last_tag = git describe --tags --abbrev=0
-        # Get all commits since last release
-        $commits = git log --pretty=format:'- %s' $last_tag..HEAD
-        echo "changelog=$commits" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        # Get the last release tag, or the first commit if no tags exist
+        $last_tag = git describe --tags --abbrev=0 2>$null
+        if ($LASTEXITCODE -ne 0) {
+          # No tags found, get all commits
+          $commits = git log --pretty=format:'- %s'
+        } else {
+          # Get all commits since the last release tag
+          $commits = git log --pretty=format:'- %s' $last_tag..HEAD
+        }
+
+        # Use a heredoc to handle multi-line string for the output
+        $changelog = @"
+        $commits
+        "@
+
+        echo "changelog<<EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo "$changelog" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo "EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Prepare Release Message
       id: release_message_prep
