@@ -26,12 +26,33 @@ This desktop application enhances your DeepSeek chat experience with:
 - 🧹 **Clean Interface**:
   - Removed unnecessary UI elements
   - Persistent styling across navigation
+- 🌙 **Dark Titlebar Support**:
+  - Automatically matches Windows system theme
+  - Manual override options available
 - 🔃 **Auto Updater**
 
+## Advanced Usage 🔧
+For advanced users, you can customize the application behavior:
+
+```bash
+# Force dark titlebar regardless of system theme
+DeepSeekChat.exe --dark-titlebar
+
+# Force light titlebar regardless of system theme
+DeepSeekChat.exe --light-titlebar
+
+# Run in release mode (disable debug tools)
+DeepSeekChat.exe --release
+```
+
+The titlebar will automatically match your Windows system theme by default. If you have Windows set to dark mode, the titlebar will be dark. If you have Windows set to light mode, the titlebar will be light.
+
 ## Future Plans 🔮
-- [ ] Custom theme support
+- [x] ~~Dark titlebar support~~ ✅ **Completed!**
+- [ ] Custom theme support for the entire interface
 - [ ] Keyboard shortcuts
 - [ ] Cross-platform builds (Mac/Linux)
+- [ ] System tray integration
 
 ## Connect with Me 👋
 - [YouTube](https://youtube.com/@LousyBook01)

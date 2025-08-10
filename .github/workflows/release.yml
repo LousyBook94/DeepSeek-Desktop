@@ -3,8 +3,8 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1.56"
-  MESSAGE: "Yay V{0} released!! Run auto updater on every startup 🎊🥳🎉✨" # Using {0} as a simple placeholder
+  VERSION: "0.1.57"
+  MESSAGE: "🌙 V{0} released with Dark Titlebar support! Now matches your Windows theme automatically ✨🎉" # Using {0} as a simple placeholder
 
 jobs:
   build-and-release:
