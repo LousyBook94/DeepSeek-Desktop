@@ -10,3 +10,16 @@ __pycache__/
 
 # Local helper dumps
 webview_help.txt
+
+# PyInstaller
+dist/
+*.spec
+
+# Test runner caches
+.pytest_cache/
+
+# Log files
+*.log
+
+# Environment variables
+.env
