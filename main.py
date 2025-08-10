@@ -125,7 +125,19 @@ def apply_dark_titlebar(window):
             
             # Load dwmapi.dll
             dwmapi = ctypes.windll.dwmapi
-            
+            # Define function signature: HRESULT DwmSetWindowAttribute(HWND, DWORD, LPCVOID, DWORD)
+            try:
+                dwmapi.DwmSetWindowAttribute.argtypes = [
+                    ctypes.c_void_p,  # HWND
+                    ctypes.c_int,     # DWORD attribute
+                    ctypes.c_void_p,  # LPCVOID pvAttribute
+                    ctypes.c_uint     # DWORD cbAttribute
+                ]
+                dwmapi.DwmSetWindowAttribute.restype = ctypes.c_int  # HRESULT
+            except AttributeError:
+                # Older systems may not expose the symbol; keep best-effort behavior
+                pass
+             
             # Determine if we should use dark mode
             use_dark = should_use_dark_titlebar()
             dark_mode = ctypes.c_int(1 if use_dark else 0)
@@ -206,8 +218,9 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--release', action='store_true', help='Disable debug tools for release build')
-    parser.add_argument('--dark-titlebar', action='store_true', help='Force dark titlebar')
-    parser.add_argument('--light-titlebar', action='store_true', help='Force light titlebar')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--dark-titlebar', action='store_true', help='Force dark titlebar')
+    group.add_argument('--light-titlebar', action='store_true', help='Force light titlebar')
     args = parser.parse_args()
     
     # Store titlebar preference globally for access in other functions
