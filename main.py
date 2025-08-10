@@ -6,6 +6,13 @@ import platform
 
 APP_TITLE = "DeepSeek - Into the Unknown"
 
+# Verbose logging control (toggled in main based on release_mode)
+VERBOSE_LOGS = True
+def _log(msg: str):
+    global VERBOSE_LOGS
+    if VERBOSE_LOGS:
+        print(msg)
+
 # Windows-specific imports for dark titlebar
 if platform.system() == "Windows":
     try:
@@ -51,24 +58,25 @@ def find_window_handle(window_title):
             return hwnd
         
         # Try to enumerate all windows and find by partial title match
-        def enum_windows_callback(hwnd, lParam):
+        # Define callback with proper WinAPI types
+        EnumWindowsProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, ctypes.py_object)
+        def enum_windows_callback(hwnd, lst):
             length = user32.GetWindowTextLengthW(hwnd)
             if length > 0:
                 buffer = ctypes.create_unicode_buffer(length + 1)
                 user32.GetWindowTextW(hwnd, buffer, length + 1)
                 if window_title.lower() in buffer.value.lower():
-                    # Store the handle in lParam (which is a list)
-                    lParam.append(hwnd)
-                    return False  # Stop enumeration
-            return True  # Continue enumeration
+                    lst.append(hwnd)
+                    return wintypes.BOOL(False)  # Stop enumeration
+            return wintypes.BOOL(True)  # Continue enumeration
         
-        # Create callback function type
-        EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.py_object)
         callback = EnumWindowsProc(enum_windows_callback)
+        user32.EnumWindows.argtypes = [EnumWindowsProc, ctypes.py_object]
+        user32.EnumWindows.restype = wintypes.BOOL
         
         # List to store found window handle
         found_windows = []
-        user32.EnumWindows(callback, found_windows)
+        user32.EnumWindows(callback, ctypes.py_object(found_windows))
         
         if found_windows:
             return found_windows[0]
@@ -142,13 +150,13 @@ def apply_dark_titlebar(window):
             if result == 0:  # S_OK
                 mode_str = 'dark' if use_dark else 'light'
                 source_str = f"({titlebar_preference} mode)" if titlebar_preference != 'auto' else "(system theme)"
-                print(f"Titlebar set to {mode_str} {source_str}")
+                _log(f"Titlebar set to {mode_str} {source_str}")
                 return True
             else:
-                print(f"Failed to set titlebar theme: error code {result}")
+                _log(f"Failed to set titlebar theme: error code {result}")
                 return False
         else:
-            print("Could not find window handle for titlebar theming")
+            _log("Could not find window handle for titlebar theming")
             return False
             
     except Exception as e:
@@ -170,7 +178,7 @@ def apply_dark_titlebar_delayed(window):
                 return  # Success, stop trying
             time.sleep(0.5 * (attempt + 1))  # Progressive backoff
         
-        print("Failed to apply dark titlebar after multiple attempts")
+        _log("Failed to apply dark titlebar after multiple attempts")
     
     # Run in a separate thread to avoid blocking
     thread = threading.Thread(target=delayed_apply, daemon=True)
@@ -214,6 +222,9 @@ def main():
     # Auto-enable release mode for frozen builds
     is_frozen = getattr(sys, 'frozen', False)
     release_mode = args.release or is_frozen
+    # Gate verbose logs in release mode
+    global VERBOSE_LOGS
+    VERBOSE_LOGS = not release_mode
     
     # Launch auto-updater in background
     try:
