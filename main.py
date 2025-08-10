@@ -4,6 +4,8 @@ import argparse
 import sys
 import platform
 
+APP_TITLE = "DeepSeek - Into the Unknown"
+
 # Windows-specific imports for dark titlebar
 if platform.system() == "Windows":
     try:
@@ -106,7 +108,7 @@ def apply_dark_titlebar(window):
         
         # If we couldn't get it from the window object, try to find it by title
         if not hwnd:
-            hwnd = find_window_handle("DeepSeek - Into the Unknown")
+            hwnd = find_window_handle(APP_TITLE)
         
         if hwnd:
             # Constants for DwmSetWindowAttribute
@@ -162,11 +164,11 @@ def apply_dark_titlebar_delayed(window):
         # Wait a bit for the window to be fully created
         time.sleep(0.5)
         
-        # Try multiple times with increasing delays
+        # Try multiple times with progressive backoff
         for attempt in range(5):
             if apply_dark_titlebar(window):
                 return  # Success, stop trying
-            time.sleep(0.5 * (attempt + 1))  # Exponential backoff
+            time.sleep(0.5 * (attempt + 1))  # Progressive backoff
         
         print("Failed to apply dark titlebar after multiple attempts")
     
@@ -226,7 +228,7 @@ def main():
     
     # Create window with persistent cookie storage
     window = webview.create_window(
-        "DeepSeek - Into the Unknown",
+        APP_TITLE,
         "https://chat.deepseek.com",
         width=1200,
         height=800,

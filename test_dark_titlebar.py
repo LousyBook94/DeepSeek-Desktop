@@ -5,7 +5,7 @@ Test script for dark titlebar functionality
 
 import sys
 import platform
-from main import is_dark_mode_enabled, should_use_dark_titlebar, titlebar_preference
+from main import is_dark_mode_enabled, should_use_dark_titlebar
 
 def test_dark_mode_detection():
     """Test the dark mode detection functionality"""
