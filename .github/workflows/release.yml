@@ -4,7 +4,7 @@ on: workflow_dispatch
 
 env:
   VERSION: "0.1.58"
-  MESSAGE: "🚀 V{0} released with Python auto-updater & pytest migration! Better updates & improved testing ✨🎉\n\nResolves #8\nHuge thanks to @vanja-san for contributions and support! 🙌" # Using {0} as a simple placeholder
+  MESSAGE: "🚀 V{0} released with Python auto-updater & pytest migration! Better updates & improved testing ✨🎉 | Resolves #8 | Huge thanks to @vanja-san for contributions and support! 🙌" # Using {0} as a simple placeholder
 
 jobs:
   build-and-release:
