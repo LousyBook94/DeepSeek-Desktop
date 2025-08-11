@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import sys
+import argparse
 import zipfile  # For creating build.zip
 import re  # For parsing version from workflow file
 
@@ -31,7 +32,7 @@ def get_version_from_workflow():
         print(f"Error reading workflow file: {e}")
         return "0.0.0"
 
-def build_app():
+def build_app(fresh=False):
     # Ensure required files exist
     if not os.path.exists("injection"):
         print("Error: injection directory not found!")
@@ -90,9 +91,48 @@ def build_app():
     # Define resources to copy to built directory
     resources_to_copy = [
         ("injection", "injection"),  # (source, destination)
-        ("deepseek.ico", "deepseek.ico"),
-        ("auto-update.bat", "auto-update.bat")
+        ("deepseek.ico", "deepseek.ico")
     ]
+
+    # --- Auto-Updater Logic ---
+    updater_script_dir = os.path.join(os.path.dirname(__file__), "utils")
+    generated_exe_path = os.path.join(updater_script_dir, "auto-updater.exe")
+    final_exe_path = os.path.join(dist_dir, "auto-updater.exe")
+
+    # Check if auto-updater.exe already exists in utils folder or if --fresh flag is used
+    if fresh or not os.path.exists(generated_exe_path):
+        print(f"{'--fresh flag used. Regenerating' if fresh else 'auto-updater.exe not found in utils/.'} Generating auto-updater.exe now...")
+        build_updater_script = os.path.join(updater_script_dir, "build-updater.py")
+        
+        if not os.path.exists(build_updater_script):
+            print(f"Error: build-updater.py not found in {updater_script_dir}!")
+            return # Or handle error appropriately
+            
+        # Run build-updater.py
+        # The build-updater.py script will place the exe directly in the utils directory
+        
+        result = subprocess.run([sys.executable, build_updater_script], capture_output=True, text=True)
+        if result.returncode != 0:
+            print("Failed to build auto-updater.exe!")
+            print("Error:", result.stderr)
+            return # Or handle error
+        
+        print("auto-updater.exe generated successfully!")
+        # The build-updater.py script now places the exe directly in the utils directory
+        # We need to copy it to the final build directory
+        if not os.path.exists(generated_exe_path):
+            print("Critical Error: auto-updater.exe could not be found in utils directory after build process.")
+            return
+
+    # Copy the generated auto-updater.exe from utils to the dist_dir
+    if os.path.exists(generated_exe_path):
+        if not os.path.exists(final_exe_path):
+            shutil.copy(generated_exe_path, final_exe_path)
+            print(f"Copied auto-updater.exe from utils to {dist_dir}")
+        else:
+            print(f"auto-updater.exe already exists at {final_exe_path}")
+    else:
+        print("Warning: auto-updater.exe was not found in utils directory.")
     
     # Copy resources
     for src, dest in resources_to_copy:
@@ -124,4 +164,11 @@ def build_app():
     os.startfile(os.path.abspath(dist_dir))
 
 if __name__ == "__main__":
-    build_app()
+    parser = argparse.ArgumentParser(description="Build the DeepSeek Desktop application and its updater.")
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Force regeneration of the auto-updater.exe."
+    )
+    args = parser.parse_args()
+    build_app(fresh=args.fresh)

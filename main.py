@@ -243,9 +243,17 @@ def main():
     try:
         import subprocess
         import os
-        updater_path = os.path.join(os.path.dirname(__file__), 'auto-update.bat')
-        if os.path.exists(updater_path):
-            subprocess.Popen([updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        # Check for the built auto-updater.exe first, then the source script
+        built_updater_path = os.path.join(os.path.dirname(__file__), 'built', 'auto-updater.exe')
+        source_updater_path = os.path.join(os.path.dirname(__file__), 'utils', 'auto-update.py')
+        
+        if os.path.exists(built_updater_path):
+            subprocess.Popen([built_updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        elif os.path.exists(source_updater_path):
+            # Fallback to running the Python script directly if .exe is not found
+            subprocess.Popen([sys.executable, source_updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        else:
+            print("Auto-updater not found.")
     except Exception as e:
         print("Failed to launch auto updater : ", e)
         pass  # Silently continue if updater fails to launch
