@@ -264,3 +264,49 @@ const observer = new MutationObserver((mutationsList) => {
 
 // Start observing the document body for changes
 observer.observe(document.body, { childList: true, subtree: true });
+
+// --- Markdown Rendering ---
+
+// 1. Load marked.js library from a CDN
+const script = document.createElement('script');
+script.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+document.head.appendChild(script);
+
+script.onload = () => {
+    console.log('marked.js loaded');
+
+    // 2. Function to render Markdown in an element
+    function renderMarkdown(element) {
+        const rawText = element.innerText;
+        // Basic check to see if it might be markdown
+        if (rawText.includes('*') || rawText.includes('_') || rawText.includes('`')) {
+            const formattedHtml = marked.parse(rawText);
+            element.innerHTML = formattedHtml;
+        }
+    }
+
+    // 3. Use a MutationObserver to detect new messages
+    const chatObserver = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach(node => {
+                    // Check if the added node is an element and contains user messages
+                    if (node.nodeType === 1) {
+                        const userMessages = node.querySelectorAll('.fbb737a4');
+                        userMessages.forEach(renderMarkdown);
+                    }
+                });
+            }
+        }
+    });
+
+    // 4. Start observing the chat container
+    // A bit of a broad approach, but should be effective.
+    chatObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+    // 5. Initial check for any messages that are already on the page
+    document.querySelectorAll('.fbb737a4').forEach(renderMarkdown);
+};
