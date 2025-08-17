@@ -30,6 +30,11 @@ This desktop application enhances your DeepSeek chat experience with:
   - Automatically matches Windows system theme
   - Manual override options available
 - 🔃 **Auto Updater**
+- 🔄 **Real-time Synchronization**:
+  - Beautiful frosted glass refresh button with auto-hide functionality
+  - URL path preservation on refresh to maintain navigation state
+  - Loading indicators and refresh popup with smooth animations
+  - Welcome tooltip for user guidance on first interaction
 - 📝 **Enhanced Markdown Rendering**
   - Full markdown content rendering in user messages
   - System theme detection for code blocks (light/dark mode)
