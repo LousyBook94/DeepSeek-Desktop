@@ -1,10 +1,28 @@
 console.log("JS Loaded");
 
+// Load Marked.js library for markdown rendering
+const markedScript = document.createElement('script');
+markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+markedScript.async = true;
+document.head.appendChild(markedScript);
+
+// Load DOMPurify for security sanitization
+const dompurifyScript = document.createElement('script');
+dompurifyScript.src = 'https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js';
+dompurifyScript.async = true;
+document.head.appendChild(dompurifyScript);
+
 // Load Inter font from Google Fonts with all weights
-const link = document.createElement('link');
-link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap';
-link.rel = 'stylesheet';
-document.head.appendChild(link);
+const interLink = document.createElement('link');
+interLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap';
+interLink.rel = 'stylesheet';
+document.head.appendChild(interLink);
+
+// Load JetBrains Mono font from Google Fonts
+const jetbrainsLink = document.createElement('link');
+jetbrainsLink.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap';
+jetbrainsLink.rel = 'stylesheet';
+document.head.appendChild(jetbrainsLink);
 
 // Force Inter font on all elements
 const style = document.createElement('style');
@@ -33,8 +51,373 @@ style.textContent = `
         display: inline-block;
         position: relative;
     }
+    
+    /* Markdown content styling */
+    .markdown-heading {
+        margin-top: 0.5em !important;
+        margin-bottom: 0.3em !important;
+        line-height: 1.3 !important;
+    }
+    
+    h1.markdown-heading { font-size: 2em; font-weight: 700; }
+    h2.markdown-heading { font-size: 1.5em; font-weight: 600; }
+    h3.markdown-heading { font-size: 1.25em; font-weight: 600; }
+    h4.markdown-heading { font-size: 1em; font-weight: 600; }
+    h5.markdown-heading { font-size: 0.875em; font-weight: 600; }
+    h6.markdown-heading { font-size: 0.85em; font-weight: 600; }
+    
+    p {
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+        line-height: 1.5;
+    }
+    
+    /* Code block styling - now handled by theme-aware styles */
+    
+    /* Inline code styling - now handled by theme-aware styles */
+    
+    /* List styling */
+    ul, ol {
+        margin-top: 0.5em !important;
+        margin-bottom: 0.5em !important;
+        padding-left: 2em !important;
+    }
+    
+    li {
+        margin: 0.25em 0;
+    }
+    
+    /* Blockquote styling - now handled by theme-aware styles */
+    
+    /* Table styling - now handled by theme-aware styles */
 `;
 document.head.appendChild(style);
+
+// Function to detect system theme
+function getSystemTheme() {
+    // Check if the user has explicitly set a preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+    }
+    return 'light';
+}
+
+// Function to apply theme
+function applyTheme() {
+    const theme = getSystemTheme();
+    const isDark = theme === 'dark';
+    
+    // Create or update theme styles
+    let themeStyle = document.getElementById('theme-styles');
+    if (!themeStyle) {
+        themeStyle = document.createElement('style');
+        themeStyle.id = 'theme-styles';
+        document.head.appendChild(themeStyle);
+    }
+    
+    // Define theme colors
+    const colors = isDark ? {
+        background: '#1e1e1e',
+        surface: '#252526',
+        surfaceHighlight: '#2d2d30',
+        text: '#d4d4d4',
+        textSecondary: '#969696',
+        codeBackground: '#1e1e1e',
+        codeBorder: '#3e3e42',
+        codeText: '#d4d4d4',
+        inlineCodeBackground: '#2d2d30',
+        inlineCodeBorder: '#3e3e42',
+        inlineCodeText: '#d4d4d4'
+    } : {
+        background: '#ffffff',
+        surface: '#f3f3f3',
+        surfaceHighlight: '#e6e6e6',
+        text: '#24292e',
+        textSecondary: '#586069',
+        codeBackground: '#f6f8fa',
+        codeBorder: '#e1e4e8',
+        codeText: '#24292e',
+        inlineCodeBackground: '#f6f8fa',
+        inlineCodeBorder: '#e1e4e8',
+        inlineCodeText: '#24292e'
+    };
+    
+    // Apply theme styles
+    themeStyle.textContent = `
+        /* Code block styling with theme support */
+        .code-block {
+            background-color: ${colors.codeBackground} !important;
+            border: 1px solid ${colors.codeBorder} !important;
+            color: ${colors.codeText} !important;
+            font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+            font-size: 0.85em;
+            line-height: 1.45;
+            border-radius: 6px !important;
+            padding: 16px !important;
+            margin: 8px 0 !important;
+            overflow-x: auto !important;
+        }
+        
+        .code-block code {
+            background-color: transparent !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            font-family: inherit !important;
+            color: inherit !important;
+        }
+        
+        /* Inline code styling with theme support */
+        .inline-code {
+            background-color: ${colors.inlineCodeBackground} !important;
+            border: 1px solid ${colors.inlineCodeBorder} !important;
+            color: ${colors.inlineCodeText} !important;
+            font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+            font-size: 0.9em;
+            padding: 0.2em 0.4em !important;
+            border-radius: 3px !important;
+        }
+        
+        /* Table styling with theme support */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.5em 0;
+        }
+        
+        th, td {
+            padding: 6px 13px;
+            border: 1px solid ${isDark ? '#3e3e42' : '#dfe2e5'};
+        }
+        
+        th {
+            font-weight: 600;
+            background-color: ${colors.surfaceHighlight};
+        }
+        
+        tr:nth-child(2n) {
+            background-color: ${colors.surfaceHighlight};
+        }
+        
+        /* Blockquote styling with theme support */
+        blockquote {
+            color: ${colors.textSecondary};
+            border-left: 0.25em solid ${colors.codeBorder};
+        }
+    `;
+    
+    // Store current theme for reference
+    window.currentTheme = theme;
+}
+
+// Apply initial theme
+applyTheme();
+
+// Listen for system theme changes
+if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+}
+
+// Configure Marked.js options for better rendering
+function configureMarked() {
+    if (window.marked) {
+        // Set options for better rendering
+        window.marked.setOptions({
+            breaks: true,              // Convert single line breaks to <br>
+            gfm: true,                 // GitHub Flavored Markdown
+            headerIds: false,          // Don't auto-generate IDs for headers
+            mangle: false,             // Don't escape URLs
+            sanitize: false,           // We'll use DOMPurify instead
+            smartLists: true,          // Better list rendering
+            smartypants: true,         // Better punctuation rendering
+            xhtml: false               // Use standard HTML tags
+        });
+        
+        // Custom renderer for better code blocks and spacing
+        const renderer = new window.marked.Renderer();
+        
+        // Override code block rendering
+        renderer.code = function(code, language, escaped) {
+            const lang = language || 'text';
+            
+            // Ensure code is a string
+            const codeString = typeof code === 'string' ? code : String(code);
+            
+            // Create a proper code block with syntax highlighting class
+            return `<pre class="code-block"><code class="language-${lang}">${escaped ? codeString : window.marked.parseInline(codeString)}</code></pre>`;
+        };
+        
+        // Override inline code rendering
+        renderer.codespan = function(code) {
+            // Ensure code is a string
+            const codeString = typeof code === 'string' ? code : String(code);
+            return `<code class="inline-code">${codeString}</code>`;
+        };
+        
+        // Override heading rendering to fix spacing
+        const originalHeading = renderer.heading;
+        renderer.heading = function(text, level, raw) {
+            const headingHtml = originalHeading.call(this, text, level, raw);
+            // Add class for spacing control
+            return headingHtml.replace(/<h([1-6])>/, `<h$1 class="markdown-heading">`);
+        };
+        
+        // Set the custom renderer
+        window.marked.setOptions({ renderer });
+    }
+}
+
+// Function to sanitize HTML content
+function sanitizeHtml(html) {
+    if (window.DOMPurify) {
+        return window.DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: [
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'p', 'br', 'hr', 'pre', 'blockquote',
+                'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+                'strong', 'em', 'b', 'i', 'u', 's', 'del',
+                'code', 'pre', 'samp', 'kbd',
+                'a', 'img', 'div', 'span',
+                'table', 'thead', 'tbody', 'tr', 'th', 'td',
+                'details', 'summary'
+            ],
+            ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'language', 'title'],
+            ALLOW_DATA_ATTR: false,
+            SAFE_FOR_JQUERY: true,
+                FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'video', 'audio', 'form', 'input', 'button', 'textarea', 'select', 'option'],
+                FORBID_ATTR: ['onerror', 'onclick', 'onload', 'onmouseover', 'onfocus', 'onblur', 'onchange']
+        });
+    }
+    return html; // Fallback if DOMPurify isn't available
+}
+
+// Function to check if all dependencies are loaded
+function dependenciesLoaded() {
+    return window.marked && window.DOMPurify;
+}
+
+// Function to render markdown content with retry mechanism
+function renderMarkdown(element, retryCount = 0) {
+    if (element && dependenciesLoaded()) {
+        // Configure marked if not already configured
+        if (!window.marked._configured) {
+            configureMarked();
+            window.marked._configured = true;
+        }
+        
+        try {
+            // Get the markdown text and trim whitespace
+            const markdownText = element.textContent ? element.textContent.trim() : '';
+            
+            // Only process if there's actual content
+            if (markdownText) {
+                // Parse markdown to HTML
+                const html = window.marked.parse(markdownText);
+                
+                // Sanitize the HTML to prevent XSS
+                const sanitizedHtml = sanitizeHtml(html);
+                
+                // Set the inner HTML with sanitized content
+                element.innerHTML = sanitizedHtml;
+                
+                // Fix spacing issues
+                fixSpacing(element);
+                
+                // Apply code block styling
+                styleCodeBlocks(element);
+            }
+        } catch (error) {
+            console.error('Error rendering markdown:', error);
+            // Try to fallback to plain text if markdown parsing fails
+            try {
+                const plainText = element.textContent ? element.textContent.trim() : '';
+                if (plainText) {
+                    // Escape HTML to prevent XSS
+                    const escapedText = plainText.replace(/&/g, '&')
+                                                 .replace(/</g, '<')
+                                                 .replace(/>/g, '>')
+                                                 .replace(/"/g, '"')
+                                                 .replace(/'/g, '&#039;');
+                    element.innerHTML = `<p>${escapedText}</p>`;
+                }
+            } catch (fallbackError) {
+                console.error('Fallback rendering also failed:', fallbackError);
+            }
+        }
+    } else if (retryCount < 50) { // Increased retry count
+        // Retry if dependencies aren't loaded yet
+        setTimeout(() => renderMarkdown(element, retryCount + 1), 100);
+    } else if (retryCount === 50) {
+        console.warn('Markdown rendering skipped - dependencies not loaded');
+        // Fallback to plain text if dependencies never load
+        try {
+            const plainText = element.textContent ? element.textContent.trim() : '';
+            if (plainText) {
+                const escapedText = plainText.replace(/&/g, '&')
+                                           .replace(/</g, '<')
+                                           .replace(/>/g, '>')
+                                           .replace(/"/g, '"')
+                                           .replace(/'/g, '&#039;');
+                element.innerHTML = `<p>${escapedText}</p>`;
+            }
+        } catch (fallbackError) {
+            console.error('Final fallback rendering failed:', fallbackError);
+        }
+    }
+}
+
+// Function to fix spacing issues
+function fixSpacing(element) {
+    // Fix heading spacing
+    const headings = element.querySelectorAll('.markdown-heading, h1, h2, h3, h4, h5, h6');
+    headings.forEach(heading => {
+        heading.style.marginTop = '0.5em';
+        heading.style.marginBottom = '0.3em';
+        heading.style.lineHeight = '1.3';
+    });
+    
+    // Fix paragraph spacing
+    const paragraphs = element.querySelectorAll('p');
+    paragraphs.forEach(p => {
+        // Remove top margin from first paragraph
+        if (p === paragraphs[0]) {
+            p.style.marginTop = '0';
+        }
+        // Remove bottom margin from last paragraph
+        if (p === paragraphs[paragraphs.length - 1]) {
+            p.style.marginBottom = '0';
+        }
+        // Set consistent paragraph spacing
+        if (p.style.marginTop !== '0') {
+            p.style.marginTop = '0.5em';
+        }
+        if (p.style.marginBottom !== '0') {
+            p.style.marginBottom = '0.5em';
+        }
+    });
+    
+    // Fix list spacing
+    const lists = element.querySelectorAll('ul, ol');
+    lists.forEach(list => {
+        list.style.marginTop = '0.5em';
+        list.style.marginBottom = '0.5em';
+    });
+    
+    // Code block styling is now handled by theme-aware styles
+    // Inline code styling is now handled by theme-aware styles
+}
+
+// Function to apply additional styling to code blocks
+function styleCodeBlocks(element) {
+    // Add syntax highlighting classes if available
+    const codeBlocks = element.querySelectorAll('pre code');
+    codeBlocks.forEach(block => {
+        // Add line numbers if it's a multi-line code block
+        const lines = block.textContent.split('\n').length;
+        if (lines > 1) {
+            block.classList.add('multiline-code');
+        }
+    });
+}
 
 // Function to initialize text replacement
 function initTextReplacement(targetElement) {
@@ -43,6 +426,25 @@ function initTextReplacement(targetElement) {
 
 // Track initialized text replacement elements
 const initializedTextReplacements = new WeakSet();
+
+// Track initialized markdown elements
+const initializedMarkdownElements = new WeakSet();
+
+// Observer for markdown elements
+const markdownObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+        if (mutation.type === 'childList') {
+            // Check for markdown elements
+            const markdownElements = document.querySelectorAll('.fbb737a4');
+            for (const element of markdownElements) {
+                if (element && !initializedMarkdownElements.has(element)) {
+                    renderMarkdown(element);
+                    initializedMarkdownElements.add(element);
+                }
+            }
+        }
+    }
+});
 
 // Observer for text replacement elements
 const textReplacementObserver = new MutationObserver((mutations) => {
@@ -64,6 +466,12 @@ const textReplacementObserver = new MutationObserver((mutations) => {
     }
 });
 
+// Start observing the document body for markdown elements
+markdownObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+});
+
 // Start observing the document body for text replacement elements
 textReplacementObserver.observe(document.body, {
     childList: true,
@@ -80,6 +488,15 @@ for (const targetElement of initialTargetElements) {
     if (targetElement) {
         initTextReplacement(targetElement);
         initializedTextReplacements.add(targetElement);
+    }
+}
+
+// Initial check for markdown elements
+const initialMarkdownElements = document.querySelectorAll('.fbb737a4');
+for (const element of initialMarkdownElements) {
+    if (element) {
+        renderMarkdown(element);
+        initializedMarkdownElements.add(element);
     }
 }
 
