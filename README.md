@@ -30,6 +30,13 @@ This desktop application enhances your DeepSeek chat experience with:
   - Automatically matches Windows system theme
   - Manual override options available
 - 🔃 **Auto Updater**
+- 📝 **Enhanced Markdown Rendering**
+  - Full markdown content rendering in user messages
+  - System theme detection for code blocks (light/dark mode)
+  - JetBrains Mono font for improved code readability
+  - Security sanitization with DOMPurify to prevent XSS attacks
+  - Fixed spacing issues after headings and other elements
+  - Proper handling for code blocks and inline code elements
 
 ## Advanced Usage 🔧
 For advanced users, you can customize the application behavior:

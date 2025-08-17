@@ -1,21 +1,289 @@
+// Optimized script loading with immediate execution
 console.log("JS Loaded");
 
-// Load Marked.js library for markdown rendering
+// Performance optimization: Use requestIdleCallback for non-critical operations
+if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+        // Non-critical initialization here
+    });
+}
+
+// Create a refresh button for real-time updates
+function createRefreshButton() {
+    // Create small trigger button element
+    const triggerButton = document.createElement('div');
+    triggerButton.id = 'deepseek-refresh-trigger';
+    triggerButton.title = 'Refresh';
+    
+    // Create main refresh button element
+    const refreshButton = document.createElement('button');
+    refreshButton.id = 'deepseek-refresh-btn';
+    refreshButton.title = 'Refresh Screen';
+    
+    // Create SVG icon
+    const svgIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svgIcon.setAttribute('width', '16');
+    svgIcon.setAttribute('height', '16');
+    svgIcon.setAttribute('viewBox', '0 0 24 24');
+    svgIcon.setAttribute('fill', 'none');
+    svgIcon.setAttribute('stroke', 'currentColor');
+    svgIcon.setAttribute('stroke-width', '2');
+    svgIcon.setAttribute('stroke-linecap', 'round');
+    svgIcon.setAttribute('stroke-linejoin', 'round');
+    
+    const refreshPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    refreshPath.setAttribute('d', 'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15');
+    
+    svgIcon.appendChild(refreshPath);
+    refreshButton.appendChild(svgIcon);
+    
+    // Create refresh popup
+    const refreshPopup = document.createElement('div');
+    refreshPopup.id = 'deepseek-refresh-popup';
+    refreshPopup.innerHTML = `
+        <div class="spinner"></div>
+        <p class="popup-text">Refreshing...</p>
+    `;
+    
+    // Create welcome tooltip
+    const welcomeTooltip = document.createElement('div');
+    welcomeTooltip.id = 'deepseek-welcome-tooltip';
+    welcomeTooltip.innerHTML = `
+        <div class="tooltip-pointer"></div>
+        <div class="tooltip-content">
+            <p>Hover here for refresh</p>
+        </div>
+    `;
+    
+    // Apply beautiful styling
+    const style = document.createElement('style');
+    style.textContent = '#deepseek-refresh-trigger{position:fixed;top:15px;right:15px;z-index:10000;width:12px;height:12px;background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);border-radius:50%;cursor:pointer;transition:all 0.3s ease;border:1px solid rgba(255,255,255,0.3);}#deepseek-refresh-trigger:hover{transform:scale(1.2);background:rgba(255,255,255,0.3);}#deepseek-refresh-btn{position:fixed;top:50px;right:15px;z-index:9999;width:36px;height:36px;border-radius:8px;border:none;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);color:white;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.1);transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(-10px);pointer-events:none;}#deepseek-refresh-trigger:hover + #deepseek-refresh-btn{opacity:1;transform:translateY(0);pointer-events:auto;}#deepseek-refresh-btn:hover{background:rgba(255,255,255,0.2);transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,0.15);}#deepseek-refresh-btn:active{transform:scale(0.95);}@keyframes rotate{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}#deepseek-refresh-btn.refreshing{animation:rotate 1s linear infinite;}#deepseek-refresh-btn svg{width:16px;height:16px;stroke:white;stroke-width:2;}#deepseek-refresh-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10001;background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);padding:20px 30px;border-radius:12px;color:white;text-align:center;display:none;box-shadow:0 10px 30px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);}#deepseek-refresh-popup.show{display:block;animation:fadeIn 0.3s ease;}#deepseek-refresh-popup .spinner{width:40px;height:40px;margin:0 auto 15px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite;}#deepseek-refresh-popup .popup-text{margin:0;font-size:14px;font-weight:500;}#deepseek-welcome-tooltip{position:fixed;z-index:9998;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:4px 8px;border-radius:4px;color:white;font-size:12px;max-width:140px;opacity:0;transition:all 0.3s ease;pointer-events:none;border:1px solid rgba(255,255,255,0.15);}#deepseek-welcome-tooltip.show{opacity:1;}#deepseek-welcome-tooltip .tooltip-pointer{position:absolute;top:50%;right:-6px;width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:4px solid rgba(255,255,255,0.1);transform:translateY(-50%);}#deepseek-welcome-tooltip .tooltip-content{margin:0;}@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}@keyframes fadeIn{from{opacity:0;transform:translate(-50%,-50%) scale(0.9);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}body.dark-mode #deepseek-refresh-popup{background:rgba(255,255,255,0.95);color:#333;border:1px solid rgba(0,0,0,0.1);}body.dark-mode #deepseek-refresh-popup .spinner{border-top-color:#333;}.loading-indicator{position:fixed;top:0;left:0;width:100%;height:3px;background:rgba(102,126,234,0.2);z-index:10002;} .loading-indicator::after{content:"";position:absolute;top:0;left:0;width:30%;height:100%;background:linear-gradient(90deg,transparent,#667eea,transparent);animation:loading 1.5s infinite;} @keyframes loading{0%{left:-30%;}100%{left:100%;}}';
+    
+    // Add styles to head
+    document.head.appendChild(style);
+    
+    // Add elements to body
+    document.body.appendChild(triggerButton);
+    document.body.appendChild(refreshButton);
+    document.body.appendChild(refreshPopup);
+    document.body.appendChild(welcomeTooltip);
+    
+    // Create loading indicator
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'loading-indicator';
+    document.body.appendChild(loadingIndicator);
+    
+    // Show welcome tooltip on page load
+    setTimeout(() => {
+        // Position tooltip to point to the trigger button
+        const triggerRect = triggerButton.getBoundingClientRect();
+        welcomeTooltip.style.top = (triggerRect.top - 5) + 'px';
+        welcomeTooltip.style.right = (window.innerWidth - triggerRect.right + 20) + 'px';
+        
+        welcomeTooltip.classList.add('show');
+        
+        // Hide tooltip after 5 seconds
+        setTimeout(() => {
+            welcomeTooltip.classList.remove('show');
+        }, 5000);
+    }, 2000);
+    
+    // Add click event listener to trigger button
+    triggerButton.addEventListener('click', function() {
+        showRefreshPopup();
+        showLoadingIndicator();
+        
+        // Dispatch a custom event to notify the desktop app
+        const refreshEvent = new CustomEvent('deepseekRefresh', {
+            detail: { action: 'refresh' }
+        });
+        document.dispatchEvent(refreshEvent);
+        
+        // Refresh the page with current URL path
+        const currentPath = window.location.pathname + window.location.search + window.location.hash;
+        window.location.href = currentPath;
+    });
+    
+    // Add click event listener to refresh button
+    refreshButton.addEventListener('click', function() {
+        showRefreshPopup();
+        showLoadingIndicator();
+        
+        // Add refreshing animation
+        this.classList.add('refreshing');
+        
+        // Dispatch a custom event to notify the desktop app
+        const refreshEvent = new CustomEvent('deepseekRefresh', {
+            detail: { action: 'refresh' }
+        });
+        document.dispatchEvent(refreshEvent);
+        
+        // Refresh the page with current URL path
+        const currentPath = window.location.pathname + window.location.search + window.location.hash;
+        window.location.href = currentPath;
+    });
+    
+    // Function to show refresh popup
+    function showRefreshPopup() {
+        refreshPopup.classList.add('show');
+        
+        // Keep popup visible for 3 seconds to ensure user sees it
+        setTimeout(() => {
+            refreshPopup.classList.remove('show');
+        }, 3000);
+    }
+    
+    // Function to show loading indicator
+    function showLoadingIndicator() {
+        loadingIndicator.style.display = 'block';
+        
+        // Hide after 5 seconds or when page reloads
+        setTimeout(() => {
+            loadingIndicator.style.display = 'none';
+        }, 5000);
+    }
+    
+    // Auto-hide refresh button when not hovering
+    let hideTimeout;
+    function hideRefreshButton() {
+        hideTimeout = setTimeout(() => {
+            refreshButton.style.opacity = '0';
+            refreshButton.style.transform = 'translateY(-10px)';
+            refreshButton.style.pointerEvents = 'none';
+        }, 2000);
+    }
+    
+    function showRefreshButton() {
+        clearTimeout(hideTimeout);
+        refreshButton.style.opacity = '1';
+        refreshButton.style.transform = 'translateY(0)';
+        refreshButton.style.pointerEvents = 'auto';
+    }
+    
+    // Add event listeners for auto-hide functionality
+    triggerButton.addEventListener('mouseenter', showRefreshButton);
+    refreshButton.addEventListener('mouseenter', showRefreshButton);
+    triggerButton.addEventListener('mouseleave', hideRefreshButton);
+    refreshButton.addEventListener('mouseleave', hideRefreshButton);
+    
+    // Initially hide the refresh button
+    hideRefreshButton();
+    
+    return { triggerButton, refreshButton, refreshPopup };
+}
+
+// Optimized DOM ready check
+function domReady(callback) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', callback);
+    } else {
+        callback();
+    }
+}
+
+// Initialize when DOM is ready
+domReady(() => {
+    // Create refresh button with optimized performance
+    createRefreshButton();
+    
+    // Optimize image loading
+    if ('loading' in HTMLImageElement.prototype) {
+        // Native lazy loading is supported
+        document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+            img.loading = 'lazy';
+        });
+    } else {
+        // Fallback for browsers that don't support native lazy loading
+        scriptLazyLoader();
+    }
+    
+    // Add network performance monitoring
+    if ('connection' in navigator) {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        
+        // Adjust loading strategy based on connection type
+        if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+            // Reduce resources for slow connections
+            document.querySelectorAll('video, audio').forEach(media => {
+                media.pause();
+                media.style.display = 'none';
+            });
+            
+            // Show loading indicator for slow connections
+            const loadingIndicator = document.querySelector('.loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'block';
+                setTimeout(() => {
+                    loadingIndicator.style.display = 'none';
+                }, 3000);
+            }
+        }
+    }
+    
+    // Add page visibility API to pause non-essential content when tab is not visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            // Pause animations or non-essential operations when tab is hidden
+            document.querySelectorAll('.animate').forEach(el => {
+                el.style.animationPlayState = 'paused';
+            });
+        } else {
+            // Resume animations when tab becomes visible
+            document.querySelectorAll('.animate').forEach(el => {
+                el.style.animationPlayState = 'running';
+            });
+        }
+    });
+});
+
+// Script lazy loading for better performance
+function scriptLazyLoader() {
+    const scripts = document.querySelectorAll('script[data-src]');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const script = entry.target;
+                const src = script.getAttribute('data-src');
+                if (src) {
+                    script.src = src;
+                    script.removeAttribute('data-src');
+                    observer.unobserve(script);
+                }
+            }
+        });
+    });
+    
+    scripts.forEach(script => observer.observe(script));
+}
+
+// Load Marked.js library for markdown rendering with optimized loading
 const markedScript = document.createElement('script');
 markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
 markedScript.async = true;
+markedScript.onload = () => {
+    // Marked.js loaded, configure it
+    configureMarked();
+};
 document.head.appendChild(markedScript);
 
-// Load DOMPurify for security sanitization
+// Load DOMPurify for security sanitization with optimized loading
 const dompurifyScript = document.createElement('script');
 dompurifyScript.src = 'https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js';
 dompurifyScript.async = true;
+dompurifyScript.onload = () => {
+    // DOMPurify loaded
+    console.log('DOMPurify loaded');
+};
 document.head.appendChild(dompurifyScript);
 
 // Load Inter font from Google Fonts with all weights
 const interLink = document.createElement('link');
 interLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap';
 interLink.rel = 'stylesheet';
+interLink.onload = () => {
+    // Font loaded, apply styles
+    console.log('Inter font loaded');
+};
 document.head.appendChild(interLink);
 
 // Load JetBrains Mono font from Google Fonts
@@ -207,6 +475,9 @@ function applyTheme() {
     
     // Store current theme for reference
     window.currentTheme = theme;
+    
+    // Update dark mode class on body
+    document.body.classList.toggle('dark-mode', isDark);
 }
 
 // Apply initial theme
