@@ -536,8 +536,8 @@ function configureMarked() {
             // Ensure code is a string
             const codeString = typeof code === 'string' ? code : String(code);
             
-            // Marked.js already escapes inline code content, so use it as-is
-            return `<code class="inline-code">${codeString}</code>`;
+            // When overriding renderer, we're responsible for escaping to prevent XSS
+            return `<code class="inline-code">${escapeHtml(codeString)}</code>`;
         };
         
         // Override heading rendering to fix spacing
@@ -619,11 +619,7 @@ function renderMarkdown(element, retryCount = 0) {
                 const plainText = element.textContent ? element.textContent.trim() : '';
                 if (plainText) {
                     // Escape HTML to prevent XSS
-                    const escapedText = plainText.replace(/&/g, '&')
-                                                 .replace(/</g, '<')
-                                                 .replace(/>/g, '>')
-                                                 .replace(/"/g, '"')
-                                                 .replace(/'/g, '&#039;');
+                    const escapedText = escapeHtml(plainText);
                     element.innerHTML = `<p>${escapedText}</p>`;
                 }
             } catch (fallbackError) {
@@ -639,11 +635,7 @@ function renderMarkdown(element, retryCount = 0) {
         try {
             const plainText = element.textContent ? element.textContent.trim() : '';
             if (plainText) {
-                const escapedText = plainText.replace(/&/g, '&')
-                                           .replace(/</g, '<')
-                                           .replace(/>/g, '>')
-                                           .replace(/"/g, '"')
-                                           .replace(/'/g, '&#039;');
+                const escapedText = escapeHtml(plainText);
                 element.innerHTML = `<p>${escapedText}</p>`;
             }
         } catch (fallbackError) {
