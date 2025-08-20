@@ -488,6 +488,16 @@ if (window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 }
 
+// Helper function to escape HTML entities
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Configure Marked.js options for better rendering
 function configureMarked() {
     if (window.marked) {
@@ -513,16 +523,11 @@ function configureMarked() {
             // Ensure code is a string
             const codeString = typeof code === 'string' ? code : String(code);
             
-            // Escape HTML entities in code content to prevent XSS and display issues
-            const escapedCode = codeString
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
+            // Only escape if not already escaped by Marked.js to prevent double-escaping
+            const safeCode = escaped ? codeString : escapeHtml(codeString);
             
             // Create a proper code block with syntax highlighting class
-            return `<pre class="code-block"><code class="language-${lang}">${escapedCode}</code></pre>`;
+            return `<pre class="code-block"><code class="language-${lang}">${safeCode}</code></pre>`;
         };
         
         // Override inline code rendering
@@ -530,13 +535,8 @@ function configureMarked() {
             // Ensure code is a string
             const codeString = typeof code === 'string' ? code : String(code);
             
-            // Escape HTML entities in inline code content
-            const escapedCode = codeString
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
+            // Inline code is typically not pre-escaped, so always escape it
+            const escapedCode = escapeHtml(codeString);
             
             return `<code class="inline-code">${escapedCode}</code>`;
         };
