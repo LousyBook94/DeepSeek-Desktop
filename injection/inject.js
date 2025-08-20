@@ -488,9 +488,9 @@ if (window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 }
 
-// Helper function to escape HTML entities
+// Helper function to escape HTML entities (defensive against null/undefined)
 function escapeHtml(str) {
-    return str
+    return String(str || '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -518,7 +518,8 @@ function configureMarked() {
         
         // Override code block rendering
         renderer.code = function(code, language, escaped) {
-            const lang = language || 'text';
+            // Extract just the language name from info string (e.g., "js linenums" -> "js")
+            const lang = (language || '').split(/\s+/)[0] || 'text';
             
             // Ensure code is a string
             const codeString = typeof code === 'string' ? code : String(code);
