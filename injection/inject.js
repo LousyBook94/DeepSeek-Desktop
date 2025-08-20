@@ -513,15 +513,32 @@ function configureMarked() {
             // Ensure code is a string
             const codeString = typeof code === 'string' ? code : String(code);
             
+            // Escape HTML entities in code content to prevent XSS and display issues
+            const escapedCode = codeString
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            
             // Create a proper code block with syntax highlighting class
-            return `<pre class="code-block"><code class="language-${lang}">${escaped ? codeString : window.marked.parseInline(codeString)}</code></pre>`;
+            return `<pre class="code-block"><code class="language-${lang}">${escapedCode}</code></pre>`;
         };
         
         // Override inline code rendering
         renderer.codespan = function(code) {
             // Ensure code is a string
             const codeString = typeof code === 'string' ? code : String(code);
-            return `<code class="inline-code">${codeString}</code>`;
+            
+            // Escape HTML entities in inline code content
+            const escapedCode = codeString
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            
+            return `<code class="inline-code">${escapedCode}</code>`;
         };
         
         // Override heading rendering to fix spacing
