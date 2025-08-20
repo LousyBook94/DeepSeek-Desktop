@@ -535,10 +535,8 @@ function configureMarked() {
             // Ensure code is a string
             const codeString = typeof code === 'string' ? code : String(code);
             
-            // Inline code is typically not pre-escaped, so always escape it
-            const escapedCode = escapeHtml(codeString);
-            
-            return `<code class="inline-code">${escapedCode}</code>`;
+            // Marked.js already escapes inline code content, so use it as-is
+            return `<code class="inline-code">${codeString}</code>`;
         };
         
         // Override heading rendering to fix spacing
