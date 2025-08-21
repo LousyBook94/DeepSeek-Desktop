@@ -9,8 +9,18 @@ import subprocess
 import time
 import re
 import argparse
+import platform
 from datetime import datetime
 from tqdm import tqdm
+
+# Import Windows-specific modules only on Windows
+if platform.system() == "Windows":
+    try:
+        import msvcrt
+    except ImportError:
+        msvcrt = None
+else:
+    msvcrt = None
 
 # --- Configuration ---
 APP_NAME = "DeepSeekChat.exe"
@@ -95,6 +105,9 @@ def compare_versions(current, latest):
 
 def bring_console_to_front():
     """Brings the console window to the front (Windows only)."""
+    if platform.system() != "Windows":
+        return  # Skip on non-Windows systems
+    
     try:
         subprocess.run([
             'powershell',
@@ -383,14 +396,22 @@ def main():
         print("\nDo you want to download and install the update? (Y/N) ", end="", flush=True)
         start_time = time.time()
         user_input = None
-        while time.time() - start_time < 30:
-            if msvcrt.kbhit(): # Check if a key has been pressed
-                user_input = msvcrt.getch().decode('utf-8').lower()
-                if user_input == 'y' or user_input == 'n':
-                    break
-                else:
-                    print("\nInvalid input. Please press Y or N.", end="", flush=True)
-                    start_time = time.time() # Reset timer on invalid input
+        
+        if msvcrt is not None:
+            # Windows: Use msvcrt for non-blocking input
+            while time.time() - start_time < 30:
+                if msvcrt.kbhit(): # Check if a key has been pressed
+                    user_input = msvcrt.getch().decode('utf-8').lower()
+                    if user_input == 'y' or user_input == 'n':
+                        break
+                    else:
+                        print("\nInvalid input. Please press Y or N.", end="", flush=True)
+                        start_time = time.time() # Reset timer on invalid input
+        else:
+            # Non-Windows: Use simple input with timeout message
+            print("\n[*] Running on non-Windows system. Auto-proceeding with update in 5 seconds...")
+            time.sleep(5)
+            user_input = 'y'  # Auto-proceed on non-Windows systems
         
         print() # Newline after input or timeout
 
@@ -453,14 +474,6 @@ def main():
 
 if __name__ == "__main__":
     try:
-        # msvcrt is needed for keyboard input in auto mode
-        import msvcrt
-        main()
-    except ImportError:
-        # msvcrt is Windows-specific, provide a fallback for other OS or inform user
-        print("msvcrt module not found. Auto mode interactive prompt may not work correctly on this OS.")
-        # Fallback to non-interactive or simple input if possible
-        # For now, just run main without auto-mode specific input handling
         main()
     except KeyboardInterrupt:
         print("\n[-] Update cancelled by user.")
