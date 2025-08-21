@@ -4,7 +4,7 @@ on: workflow_dispatch
 
 env:
   VERSION: "0.1.60"
-  MESSAGE: "🚀 V{0} released with Improved Markdown Code Block Rendering! ✨ | Fixed code block display issues and improved markdown parsing | Resolves #11" # Using {0} as a simple placeholder
+  MESSAGE: "🚀 New release with Improved Markdown Code Block Rendering! ✨ | Fixed code block display issues and improved markdown parsing | Resolves #11"
 
 jobs:
   build-and-release:
@@ -38,8 +38,7 @@ jobs:
       with:
         tag_name: v${{ env.VERSION }}
         name: DeepSeek Desktop V${{ env.VERSION }}
-        body: |
-          ${{ env.MESSAGE.replace('{0}', env.VERSION) }}
+        body: ${{ env.MESSAGE }}
         draft: false
         prerelease: false
         files: zipped/DeepSeekChat-windows.zip
