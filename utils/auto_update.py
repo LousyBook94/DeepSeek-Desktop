@@ -293,18 +293,24 @@ def main():
     # Step 1: Check if application is running
     if not auto_mode:
         print("[1/6] >> Checking if application is running...")
-    try:
-        # Check if the process is running
-        subprocess.check_output(f'tasklist /FI "IMAGENAME eq {APP_NAME}" /FO CSV | find "{APP_NAME}"', shell=True, stderr=subprocess.DEVNULL)
+    
+    if platform.system() == "Windows":
+        try:
+            # Check if the process is running
+            subprocess.check_output(f'tasklist /FI "IMAGENAME eq {APP_NAME}" /FO CSV | find "{APP_NAME}"', shell=True, stderr=subprocess.DEVNULL)
+            if not auto_mode:
+                print(f"[*] {APP_NAME} is running. Attempting to close...")
+            subprocess.run(f'taskkill /F /IM "{APP_NAME}"', shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(3) # Wait for process to terminate
+            if not auto_mode:
+                print(f"[+] {APP_NAME} closed.")
+        except subprocess.CalledProcessError:
+            if not auto_mode:
+                print(f"[+] {APP_NAME} is not running.")
+    else:
+        # On non-Windows systems, skip process checking since this is a Windows-only app
         if not auto_mode:
-            print(f"[*] {APP_NAME} is running. Attempting to close...")
-        subprocess.run(f'taskkill /F /IM "{APP_NAME}"', shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(3) # Wait for process to terminate
-        if not auto_mode:
-            print(f"[+] {APP_NAME} closed.")
-    except subprocess.CalledProcessError:
-        if not auto_mode:
-            print(f"[+] {APP_NAME} is not running.")
+            print(f"[+] {APP_NAME} is not running (non-Windows system).")
 
     # Step 2: Get current version
     if not auto_mode:
