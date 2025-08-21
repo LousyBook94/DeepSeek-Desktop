@@ -410,6 +410,7 @@ function applyTheme() {
         inlineCodeText: '#24292e'
     };
     
+
     // Apply theme styles
     themeStyle.textContent = `
         /* Code block styling with theme support */
@@ -488,6 +489,16 @@ if (window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 }
 
+// Helper function to escape HTML entities (defensive against null/undefined)
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Configure Marked.js options for better rendering
 function configureMarked() {
     if (window.marked) {
@@ -508,20 +519,58 @@ function configureMarked() {
         
         // Override code block rendering
         renderer.code = function(code, language, escaped) {
-            const lang = language || 'text';
-            
-            // Ensure code is a string
-            const codeString = typeof code === 'string' ? code : String(code);
-            
-            // Create a proper code block with syntax highlighting class
-            return `<pre class="code-block"><code class="language-${lang}">${escaped ? codeString : window.marked.parseInline(codeString)}</code></pre>`;
+            try {
+                // Handle case where code is an object from markdown parser
+                let codeContent = code;
+                if (code && typeof code === 'object' && !Array.isArray(code)) {
+                    // If it's a code block object, use the text property
+                    codeContent = code.text || '';
+                }
+                
+                // Convert to string and trim
+                const codeString = String(codeContent || '').trim();
+                
+                // Extract just the language name from info string (e.g., "js linenums" -> "js")
+                let lang = (language || '').split(/\s+/)[0] || 'text';
+                
+                // If language comes in as an object, try to get it from the raw property
+                if (typeof lang === 'object') {
+                    const rawLang = lang.raw || '';
+                    lang = rawLang.trim().split(/\s+/)[0] || 'text';
+                }
+                
+                // Only escape if not already escaped by Marked.js to prevent double-escaping
+                const safeCode = escaped ? codeString : escapeHtml(codeString);
+                
+                // Create a proper code block with syntax highlighting class
+                return `<pre class="code-block"><code class="language-${lang}">${safeCode}</code></pre>`;
+            } catch (error) {
+                console.error('Error rendering code block:', error);
+                const fallbackCode = (code && typeof code === 'object') ? (code.text || '') : code;
+                return `<pre class="code-block"><code>${escapeHtml(String(fallbackCode || ''))}</code></pre>`;
+            }
         };
         
         // Override inline code rendering
         renderer.codespan = function(code) {
-            // Ensure code is a string
-            const codeString = typeof code === 'string' ? code : String(code);
-            return `<code class="inline-code">${codeString}</code>`;
+            try {
+                // Handle case where code is an object from markdown parser
+                let codeContent = code;
+                if (code && typeof code === 'object' && !Array.isArray(code)) {
+                    // If it's a code span object, try to get the raw content
+                    codeContent = code.raw || code.text || '';
+                }
+                
+                // Convert to string, trim, and remove backticks
+                let codeString = String(codeContent || '').trim();
+                codeString = codeString.replace(/^`+|`+$/g, ''); // Remove surrounding backticks
+                
+                // When overriding renderer, we're responsible for escaping to prevent XSS
+                return `<code class="inline-code">${escapeHtml(codeString)}</code>`;
+            } catch (error) {
+                console.error('Error rendering inline code:', error);
+                return `<code class="inline-code">${escapeHtml(String(code || ''))}</code>`;
+            }
         };
         
         // Override heading rendering to fix spacing
@@ -561,7 +610,6 @@ function sanitizeHtml(html) {
     return html; // Fallback if DOMPurify isn't available
 }
 
-// Function to check if all dependencies are loaded
 function dependenciesLoaded() {
     return window.marked && window.DOMPurify;
 }
@@ -581,37 +629,44 @@ function renderMarkdown(element, retryCount = 0) {
             
             // Only process if there's actual content
             if (markdownText) {
-                // Parse markdown to HTML
-                const html = window.marked.parse(markdownText);
+                // Ensure we're working with a string
+                const markdownString = typeof markdownText === 'string' 
+                    ? markdownText 
+                    : JSON.stringify(markdownText, null, 2);
                 
-                // Sanitize the HTML to prevent XSS
-                const sanitizedHtml = sanitizeHtml(html);
-                
-                // Set the inner HTML with sanitized content
-                element.innerHTML = sanitizedHtml;
-                
-                // Fix spacing issues
-                fixSpacing(element);
-                
-                // Apply code block styling
-                styleCodeBlocks(element);
+                try {
+                    // Parse markdown to HTML
+                    const html = window.marked.parse(markdownString);
+                    
+                    // Sanitize the HTML to prevent XSS
+                    const sanitizedHtml = sanitizeHtml(html);
+                    
+                    // Set the inner HTML with sanitized content
+                    element.innerHTML = sanitizedHtml;
+                    
+                    // Fix spacing issues
+                    fixSpacing(element);
+                    
+                    // Apply code block styling
+                    styleCodeBlocks(element);
+                } catch (parseError) {
+                    console.error('Markdown parsing error:', parseError);
+                    // Fallback to showing raw content if parsing fails
+                    element.innerHTML = `<pre><code>${escapeHtml(markdownString)}</code></pre>`;
+                }
             }
         } catch (error) {
-            console.error('Error rendering markdown:', error);
+            console.error('Error in renderMarkdown:', error);
             // Try to fallback to plain text if markdown parsing fails
             try {
                 const plainText = element.textContent ? element.textContent.trim() : '';
                 if (plainText) {
                     // Escape HTML to prevent XSS
-                    const escapedText = plainText.replace(/&/g, '&')
-                                                 .replace(/</g, '<')
-                                                 .replace(/>/g, '>')
-                                                 .replace(/"/g, '"')
-                                                 .replace(/'/g, '&#039;');
-                    element.innerHTML = `<p>${escapedText}</p>`;
+                    const escapedText = escapeHtml(plainText);
+                    element.innerHTML = `<pre><code>${escapedText}</code></pre>`;
                 }
             } catch (fallbackError) {
-                console.error('Fallback rendering also failed:', fallbackError);
+                console.error('Fallback rendering failed:', fallbackError);
             }
         }
     } else if (retryCount < 50) { // Increased retry count
@@ -623,12 +678,8 @@ function renderMarkdown(element, retryCount = 0) {
         try {
             const plainText = element.textContent ? element.textContent.trim() : '';
             if (plainText) {
-                const escapedText = plainText.replace(/&/g, '&')
-                                           .replace(/</g, '<')
-                                           .replace(/>/g, '>')
-                                           .replace(/"/g, '"')
-                                           .replace(/'/g, '&#039;');
-                element.innerHTML = `<p>${escapedText}</p>`;
+                const escapedText = escapeHtml(plainText);
+                element.innerHTML = `<pre><code>${escapedText}</code></pre>`;
             }
         } catch (fallbackError) {
             console.error('Final fallback rendering failed:', fallbackError);
