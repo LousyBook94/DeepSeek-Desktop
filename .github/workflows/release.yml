@@ -29,22 +29,6 @@ jobs:
     - name: Build application
       run: python build.py --fresh
 
-    - name: Get commit messages
-      id: commits
-      run: |
-        # Get last release tag
-        $last_tag = git describe --tags --abbrev=0
-        # Get all commits since last release
-        $commits = git log --pretty=format:'- %s' $last_tag..HEAD
-        echo "changelog=$commits" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-    - name: Prepare Release Message
-      id: release_message_prep
-      run: |
-        $rawMessage = "${{ env.MESSAGE }}"
-        $version = "${{ env.VERSION }}"
-        $finalMessage = $rawMessage.Replace("{0}", $version)
-        echo "final_message=$finalMessage" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Rename build.zip to DeepSeekChat-windows.zip
       run: Rename-Item -Path .\zipped\build.zip -NewName DeepSeekChat-windows.zip
@@ -55,10 +39,7 @@ jobs:
         tag_name: v${{ env.VERSION }}
         name: DeepSeek Desktop V${{ env.VERSION }}
         body: |
-          ${{ steps.release_message_prep.outputs.final_message }}
-
-          **Changelog:**
-          ${{ steps.commits.outputs.changelog }}
+          ${{ env.MESSAGE.replace('{0}', env.VERSION) }}
         draft: false
         prerelease: false
         files: zipped/DeepSeekChat-windows.zip
