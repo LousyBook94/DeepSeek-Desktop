@@ -3,8 +3,8 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1.59"
-  MESSAGE: "🚀 V{0} released with Enhanced Markdown rendering, Real-time sync refresh button, and performance optimizations! ✨🎉 | Resolves #9 #10 | Huge thanks to @vanja-san for contributions and support! 🙌" # Using {0} as a simple placeholder
+  VERSION: "0.1.60"
+  MESSAGE: "🚀 V{0} released with Improved Markdown Code Block Rendering! ✨ | Fixed code block display issues and improved markdown parsing | Resolves #11" # Using {0} as a simple placeholder
 
 jobs:
   build-and-release:
