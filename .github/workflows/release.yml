@@ -4,7 +4,13 @@ on: workflow_dispatch
 
 env:
   VERSION: "0.1.60"
-  MESSAGE: "🚀 Version 0.1.60 - Improved Markdown Code Block Rendering! ✨ | Fixed code block display issues and improved markdown parsing | Resolves #11"
+  RELEASE_BODY: |
+    🚀 V__VERSION__ released with Improved Markdown Code Block Rendering! ✨
+    
+    ### What's New
+    - Fixed code block display issues
+    - Improved markdown parsing
+    - Resolves #11
 
 jobs:
   build-and-release:
@@ -32,13 +38,21 @@ jobs:
 
     - name: Rename build.zip to DeepSeekChat-windows.zip
       run: Rename-Item -Path .\zipped\build.zip -NewName DeepSeekChat-windows.zip
+      
+    - name: Prepare release body
+      id: prepare_release
+      run: |
+        $releaseBody = "${{ env.RELEASE_BODY }}" -replace "__VERSION__", "${{ env.VERSION }}"
+        Add-Content -Path $env:GITHUB_ENV -Value "RELEASE_BODY<<EOF"
+        Add-Content -Path $env:GITHUB_ENV -Value $releaseBody
+        Add-Content -Path $env:GITHUB_ENV -Value "EOF"
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ env.VERSION }}
         name: DeepSeek Desktop V${{ env.VERSION }}
-        body: ${{ env.MESSAGE }}
+        body: ${{ env.RELEASE_BODY }}
         draft: false
         prerelease: false
         files: zipped/DeepSeekChat-windows.zip
