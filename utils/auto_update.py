@@ -9,8 +9,13 @@ import subprocess
 import time
 import re
 import argparse
+import platform
+import ctypes
 from datetime import datetime
+from packaging import version
 from tqdm import tqdm
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.windows import show_error_popup
 
 # --- Configuration ---
 APP_NAME = "DeepSeekChat.exe"
@@ -56,70 +61,38 @@ def fetch_latest_version_with_retry():
                 return None, None
 
 def compare_versions(current, latest):
-    """Compares two version strings (e.g., '1.2.3' or '1.2.3-beta')."""
-    def parse_version(v):
-        # Split version into core and prerelease
-        if '-' in v:
-            core, prerelease = v.split('-', 1)
-            return list(map(int, core.split('.'))), prerelease
-        return list(map(int, v.split('.'))), None
-    
+    """Compares two version strings using the 'packaging' library."""
     try:
-        current_parts, current_prerelease = parse_version(current)
-        latest_parts, latest_prerelease = parse_version(latest)
-        
-        # Pad shorter version with zeros
-        max_len = max(len(current_parts), len(latest_parts))
-        current_parts.extend([0] * (max_len - len(current_parts)))
-        latest_parts.extend([0] * (max_len - len(latest_parts)))
-        
-        # Compare core versions
-        if current_parts > latest_parts:
-            return True
-        elif current_parts < latest_parts:
-            return False
-        else:
-            # Core versions are equal, handle prerelease
-            if current_prerelease is None and latest_prerelease is None:
-                return True  # Equal versions
-            elif current_prerelease is None:
-                return True  # Non-beta is newer than beta
-            elif latest_prerelease is None:
-                return False  # Beta is older than non-beta
-            else:
-                # Both are prereleases, compare lexicographically
-                return current_prerelease >= latest_prerelease
-    except ValueError:
-        print(f"Warning: Could not parse versions ('{current}', '{latest}'). Assuming update is needed.")
+        # Returns True if current version is same or newer than latest
+        return version.parse(current) >= version.parse(latest)
+    except version.InvalidVersion as e:
+        print(f"Warning: Could not parse version string. Assuming update is needed. Error: {e}")
         return False
 
 def bring_console_to_front():
-    """Brings the console window to the front (Windows only)."""
+    """Brings the console window to the front using ctypes (Windows only)."""
+    if platform.system() != 'Windows':
+        return
+
     try:
-        subprocess.run([
-            'powershell',
-            '-Command',
-            '''
-            Add-Type -TypeDefinition @"
-            using System;
-            using System.Runtime.InteropServices;
-            public class Win32 {
-                [DllImport("kernel32.dll")]
-                public static extern IntPtr GetConsoleWindow();
-                [DllImport("user32.dll")]
-                public static extern bool SetForegroundWindow(IntPtr hWnd);
-                [DllImport("user32.dll")]
-                public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-            }
-            "@
-            $consolePtr = [Win32]::GetConsoleWindow();
-            if ($consolePtr -ne [IntPtr]::Zero) {
-                [Win32]::ShowWindow($consolePtr, 1); # SW_SHOWNORMAL
-                [Win32]::SetForegroundWindow($consolePtr);
-                Start-Sleep -Milliseconds 500 # Give it a moment to come to front
-            }
-            '''
-        ], check=True, capture_output=True, text=True)
+        kernel32 = ctypes.windll.kernel32
+        user32 = ctypes.windll.user32
+
+        # Get the handle to the console window
+        console_hwnd = kernel32.GetConsoleWindow()
+        if console_hwnd == 0:
+            return # No console window found
+
+        # Constants for ShowWindow
+        SW_SHOWNORMAL = 1
+
+        # Bring the window to the front
+        user32.ShowWindow(console_hwnd, SW_SHOWNORMAL)
+        user32.SetForegroundWindow(console_hwnd)
+
+        # A small delay to ensure it comes to the front
+        time.sleep(0.5)
+
     except Exception as e:
         print(f"Could not bring console to front: {e}")
 
@@ -378,29 +351,8 @@ def main():
             sys.exit(1)
         return
 
-    # In auto mode, ask for confirmation before proceeding with install
     if auto_mode:
-        print("\nDo you want to download and install the update? (Y/N) ", end="", flush=True)
-        start_time = time.time()
-        user_input = None
-        while time.time() - start_time < 30:
-            if msvcrt.kbhit(): # Check if a key has been pressed
-                user_input = msvcrt.getch().decode('utf-8').lower()
-                if user_input == 'y' or user_input == 'n':
-                    break
-                else:
-                    print("\nInvalid input. Please press Y or N.", end="", flush=True)
-                    start_time = time.time() # Reset timer on invalid input
-        
-        print() # Newline after input or timeout
-
-        if user_input == 'n':
-            print("[*] Update cancelled by user.")
-            sys.exit(0)
-        elif user_input == 'y':
-            print("[*] Proceeding with update...")
-        else: # Timeout or no valid input
-            print("[*] No response received. Auto-proceeding with update...")
+        print("[*] Auto-proceeding with update...")
 
     # Create backup before installing
     backup_dir = create_backup(script_dir, APP_NAME, current_version)
@@ -453,18 +405,12 @@ def main():
 
 if __name__ == "__main__":
     try:
-        # msvcrt is needed for keyboard input in auto mode
-        import msvcrt
-        main()
-    except ImportError:
-        # msvcrt is Windows-specific, provide a fallback for other OS or inform user
-        print("msvcrt module not found. Auto mode interactive prompt may not work correctly on this OS.")
-        # Fallback to non-interactive or simple input if possible
-        # For now, just run main without auto-mode specific input handling
         main()
     except KeyboardInterrupt:
         print("\n[-] Update cancelled by user.")
         sys.exit(1)
     except Exception as e:
-        print(f"\n[-] An unexpected error occurred: {e}")
+        error_message = f"An unexpected error occurred during the update process.\n\nDetails: {e}"
+        print(f"\n[-] {error_message}")
+        show_error_popup("Auto-Update Failed", error_message)
         sys.exit(1)

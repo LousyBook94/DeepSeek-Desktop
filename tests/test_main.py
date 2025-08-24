@@ -1,6 +1,7 @@
 import sys
 import os
 import pytest
+import platform
 from unittest.mock import patch, MagicMock
 
 # Add the project root to the Python path
@@ -230,6 +231,7 @@ def test_find_window_handle_windows_no_ctypes(mocker):
 
 def test_find_window_handle_success_with_findwindoww(mocker):
     """Test finding a window successfully with FindWindowW."""
+    mocker.patch('platform.system', return_value='Windows')
     mock_ctypes = mocker.patch('main.ctypes', create=True)
     mock_user32 = mock_ctypes.windll.user32
     mock_user32.FindWindowW.return_value = 12345  # Mock HWND
@@ -285,6 +287,7 @@ def test_find_window_handle_success_with_enumwindows(mocker):
 
 def test_find_window_handle_not_found(mocker):
     """Test when no window is found by either method."""
+    mocker.patch('platform.system', return_value='Windows')
     mock_ctypes = mocker.patch('main.ctypes', create=True)
     mock_user32 = mock_ctypes.windll.user32
     mock_user32.FindWindowW.return_value = None
@@ -293,6 +296,62 @@ def test_find_window_handle_not_found(mocker):
 
 def test_find_window_handle_exception(mocker):
     """Test that an exception during window finding is caught."""
+    mocker.patch('platform.system', return_value='Windows')
     mock_ctypes = mocker.patch('main.ctypes', create=True)
     mock_ctypes.windll.user32.FindWindowW.side_effect = Exception("Test Exception")
     assert main.find_window_handle("some_title") is None
+
+# --- Tests for launch_updater ---
+
+def test_launch_updater_finds_exe_in_built(mocker):
+    """Test that launch_updater finds and launches the .exe in the 'built' folder."""
+    mocker.patch('main.get_script_directory', return_value='/app')
+    # Popen is in the 'main' module's namespace now
+    mock_popen = mocker.patch('main.subprocess.Popen')
+
+    # Mock os.path.exists to find the exe in the 'built' path
+    def mock_exists(path):
+        return path == '/app/built/auto-updater.exe'
+    mocker.patch('os.path.exists', mock_exists)
+
+    flags = 0
+    if platform.system() == "Windows":
+        flags = main.subprocess.CREATE_NEW_CONSOLE
+
+    main.launch_updater()
+
+    mock_popen.assert_called_once_with(
+        ['/app/built/auto-updater.exe', '--auto'],
+        creationflags=flags
+    )
+
+def test_launch_updater_finds_py_in_utils(mocker):
+    """Test that launch_updater finds and launches the .py file in 'utils' as a fallback."""
+    mocker.patch('main.get_script_directory', return_value='/app')
+    mock_popen = mocker.patch('main.subprocess.Popen')
+
+    # Mock os.path.exists to only find the .py file in 'utils'
+    def mock_exists(path):
+        return path == '/app/utils/auto-update.py'
+    mocker.patch('os.path.exists', mock_exists)
+
+    flags = 0
+    if platform.system() == "Windows":
+        flags = main.subprocess.CREATE_NEW_CONSOLE
+
+    main.launch_updater()
+
+    mock_popen.assert_called_once_with(
+        [sys.executable, '/app/utils/auto-update.py', '--auto'],
+        creationflags=flags
+    )
+
+def test_launch_updater_finds_nothing(mocker):
+    """Test that launch_updater does nothing when no updater is found."""
+    mocker.patch('main.get_script_directory', return_value='/app')
+    mock_popen = mocker.patch('main.subprocess.Popen')
+    mocker.patch('os.path.exists', return_value=False) # Nothing exists
+
+    main.launch_updater()
+
+    mock_popen.assert_not_called()
