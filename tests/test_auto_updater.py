@@ -67,19 +67,31 @@ def test_get_current_version_not_exists(temp_test_dir):
     assert version == "0.0.0"
 
 @pytest.mark.parametrize("current, latest, expected", [
+    # Standard comparisons
+    ("1.0.0", "1.0.1", False),
+    ("1.0.1", "1.0.0", True),
     ("1.0.0", "1.0.0", True),
     ("1.1.0", "1.0.1", True),
-    ("1.0.1", "1.0.1-beta", True), # Assuming non-beta is newer
-    ("1.0.0", "1.0.1", False),
-    ("1.0.1-beta", "1.0.1", False),
     ("1.0.0.1", "1.0.0", True),
     ("1.0", "1.0.1", False),
     ("1.0.1", "1.0", True),
-    ("invalid", "1.0.0", False), # Invalid current
-    ("1.0.0", "invalid", False), # Invalid latest
+
+    # Pre-release comparisons
+    ("1.0.1-beta", "1.0.1", False),
+    ("1.0.1", "1.0.1-beta", True),
+    ("1.0.0-rc.1", "1.0.0-rc.2", False),
+    ("1.0.0-rc.2", "1.0.0-rc.1", True),
+    ("1.0.0-beta.2", "1.0.0-beta.11", False),
+    ("1.0.0-beta.11", "1.0.0-beta.2", True),
+    ("1.0.0-alpha", "1.0.0-beta", False),
+    ("1.0.0-beta", "1.0.0-alpha", True),
+
+    # Invalid versions should result in assuming an update is needed
+    ("invalid", "1.0.0", False),
+    ("1.0.0", "invalid", False),
 ])
 def test_compare_versions(current, latest, expected):
-    """Test compare_versions with various version strings."""
+    """Test compare_versions with various version strings, including pre-releases."""
     assert compare_versions(current, latest) == expected
 
 @patch('utils.auto_update.requests.get')
