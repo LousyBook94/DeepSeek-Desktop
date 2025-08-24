@@ -9,8 +9,15 @@ import subprocess
 import time
 import re
 import argparse
+import platform
+import ctypes
 from datetime import datetime
+from packaging import version
 from tqdm import tqdm
+
+# Ensure utils can be imported when run as a script
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.windows import show_error_popup
 
 # --- Configuration ---
 APP_NAME = "DeepSeekChat.exe"
@@ -56,70 +63,25 @@ def fetch_latest_version_with_retry():
                 return None, None
 
 def compare_versions(current, latest):
-    """Compares two version strings (e.g., '1.2.3' or '1.2.3-beta')."""
-    def parse_version(v):
-        # Split version into core and prerelease
-        if '-' in v:
-            core, prerelease = v.split('-', 1)
-            return list(map(int, core.split('.'))), prerelease
-        return list(map(int, v.split('.'))), None
-    
+    """Compares two version strings using the 'packaging' library."""
     try:
-        current_parts, current_prerelease = parse_version(current)
-        latest_parts, latest_prerelease = parse_version(latest)
-        
-        # Pad shorter version with zeros
-        max_len = max(len(current_parts), len(latest_parts))
-        current_parts.extend([0] * (max_len - len(current_parts)))
-        latest_parts.extend([0] * (max_len - len(latest_parts)))
-        
-        # Compare core versions
-        if current_parts > latest_parts:
-            return True
-        elif current_parts < latest_parts:
-            return False
-        else:
-            # Core versions are equal, handle prerelease
-            if current_prerelease is None and latest_prerelease is None:
-                return True  # Equal versions
-            elif current_prerelease is None:
-                return True  # Non-beta is newer than beta
-            elif latest_prerelease is None:
-                return False  # Beta is older than non-beta
-            else:
-                # Both are prereleases, compare lexicographically
-                return current_prerelease >= latest_prerelease
-    except ValueError:
-        print(f"Warning: Could not parse versions ('{current}', '{latest}'). Assuming update is needed.")
+        return version.parse(current) >= version.parse(latest)
+    except version.InvalidVersion as e:
+        print(f"Warning: Could not parse version string '{current}' or '{latest}'. Assuming update is needed. Error: {e}")
         return False
 
 def bring_console_to_front():
-    """Brings the console window to the front (Windows only)."""
+    """Brings the console window to the front using ctypes (Windows only)."""
+    if platform.system() != 'Windows':
+        return
     try:
-        subprocess.run([
-            'powershell',
-            '-Command',
-            '''
-            Add-Type -TypeDefinition @"
-            using System;
-            using System.Runtime.InteropServices;
-            public class Win32 {
-                [DllImport("kernel32.dll")]
-                public static extern IntPtr GetConsoleWindow();
-                [DllImport("user32.dll")]
-                public static extern bool SetForegroundWindow(IntPtr hWnd);
-                [DllImport("user32.dll")]
-                public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-            }
-            "@
-            $consolePtr = [Win32]::GetConsoleWindow();
-            if ($consolePtr -ne [IntPtr]::Zero) {
-                [Win32]::ShowWindow($consolePtr, 1); # SW_SHOWNORMAL
-                [Win32]::SetForegroundWindow($consolePtr);
-                Start-Sleep -Milliseconds 500 # Give it a moment to come to front
-            }
-            '''
-        ], check=True, capture_output=True, text=True)
+        kernel32 = ctypes.windll.kernel32
+        user32 = ctypes.windll.user32
+        console_hwnd = kernel32.GetConsoleWindow()
+        if console_hwnd != 0:
+            user32.ShowWindow(console_hwnd, 1) # SW_SHOWNORMAL
+            user32.SetForegroundWindow(console_hwnd)
+            time.sleep(0.5)
     except Exception as e:
         print(f"Could not bring console to front: {e}")
 
@@ -261,191 +223,116 @@ def restore_backup(backup_dir, script_dir, app_name):
         shutil.move(src_version, dest_version)
         print("[+] Restored: version.txt")
 
+def fail_with_popup(title, message):
+    """Prints an error, shows a popup, and exits."""
+    full_message = f"[-] {title}: {message}"
+    print(full_message)
+    show_error_popup(title, str(message))
+    sys.exit(1)
+
 def main():
     parser = argparse.ArgumentParser(description="DeepSeek Desktop Auto-Updater")
-    parser.add_argument(
-        "--auto",
-        action="store_true",
-        help="Run in auto mode (non-interactive)."
-    )
+    parser.add_argument("--auto", action="store_true", help="Run in auto mode (non-interactive).")
     args = parser.parse_args()
 
     auto_mode = args.auto
     script_dir = get_script_directory()
-    print(f"Script directory: {script_dir}")
     
-    # Ensure TEMP_DIR exists
+    if auto_mode:
+        # In auto mode, bring console to front only if an update is found
+        bring_console_to_front()
+    else:
+        print(f"Script directory: {script_dir}")
+
     os.makedirs(TEMP_DIR, exist_ok=True)
 
-    # Step 1: Check if application is running
     if not auto_mode:
         print("[1/6] >> Checking if application is running...")
     try:
-        # Check if the process is running
         subprocess.check_output(f'tasklist /FI "IMAGENAME eq {APP_NAME}" /FO CSV | find "{APP_NAME}"', shell=True, stderr=subprocess.DEVNULL)
         if not auto_mode:
             print(f"[*] {APP_NAME} is running. Attempting to close...")
         subprocess.run(f'taskkill /F /IM "{APP_NAME}"', shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(3) # Wait for process to terminate
+        time.sleep(3)
         if not auto_mode:
             print(f"[+] {APP_NAME} closed.")
     except subprocess.CalledProcessError:
         if not auto_mode:
             print(f"[+] {APP_NAME} is not running.")
 
-    # Step 2: Get current version
     if not auto_mode:
         print("\n[2/6] >> Checking current version...")
     current_version = get_current_version(script_dir)
     if not auto_mode:
         print(f"[*] Current version: {current_version}")
 
-    # Step 3: Fetch latest version
     if not auto_mode:
         print("\n[3/6] >> Fetching latest release information...")
-    try:
-        latest_version, release_info = fetch_latest_version_with_retry()
-        if not latest_version:
-            if auto_mode:
-                sys.exit(0) # Silently exit if no version found in auto mode
-            else:
-                print("[-] Could not fetch latest version. Exiting.")
-                return
-        if not auto_mode:
-            print(f"[*] Latest version: {latest_version}")
-    except Exception as e:
-        print(f"[-] Error fetching release info: {e}")
-        if auto_mode:
-            sys.exit(1)
-        return
 
-    # Step 4: Compare versions
+    latest_version, release_info = fetch_latest_version_with_retry()
+    if not latest_version:
+        if auto_mode:
+            sys.exit(0) # Silently exit if no new version found
+        else:
+            fail_with_popup("Update Check Failed", "Could not fetch the latest version information from GitHub.")
+
+    if not auto_mode:
+        print(f"[*] Latest version: {latest_version}")
+
     if not auto_mode:
         print("\n[4/6] >> Comparing versions...")
     if compare_versions(current_version, latest_version):
         if not auto_mode:
             print(f"[+] You already have the latest version ({current_version})!")
-        # In auto mode, if no update, just exit
-        if auto_mode:
-            sys.exit(0)
-        else:
-            # Still open the app if it was running or closed by us
             app_path = os.path.join(script_dir, APP_NAME)
             if os.path.exists(app_path):
                 print(f"[+] Starting {APP_NAME}...")
                 subprocess.Popen([app_path])
-            return
+        sys.exit(0)
 
-    if not auto_mode:
-        print(f"[!] Update available: {current_version} -> {latest_version}")
+    print(f"[!] Update available: {current_version} -> {latest_version}")
 
-    # Step 5: Download and install update
     if not auto_mode:
         print("\n[5/6] >> Downloading and installing update...")
-    elif auto_mode:
-        # In auto mode, bring console to front only if an update is found
-        bring_console_to_front()
-        print("\n[!] NEW VERSION AVAILABLE!")
-        print(f"     Current: {current_version}")
-        print(f"     Latest:  {latest_version}")
-        print("\nYou have 30 seconds to respond...")
-        print("If no response, update will proceed automatically.")
-        print()
 
-    asset_to_download = None
-    if release_info and "assets" in release_info:
-        for asset in release_info["assets"]:
-            if "windows.zip" in asset["name"].lower():
-                asset_to_download = asset
-                break
+    asset_to_download = next((asset for asset in release_info.get("assets", []) if "windows.zip" in asset.get("name", "").lower()), None)
     
     if not asset_to_download:
-        print("[-] Error: Windows release asset not found.")
-        if auto_mode:
-            sys.exit(1)
-        return
+        fail_with_popup("Update Error", "Could not find a compatible release asset (windows.zip) in the latest release.")
 
     try:
         zip_path = download_release_with_retry(asset_to_download["browser_download_url"], asset_to_download["name"])
         if not zip_path:
-            print("[-] Failed to download the update.")
-            if auto_mode:
-                sys.exit(1)
-            return
+            fail_with_popup("Download Failed", "Failed to download the update package after multiple retries.")
     except Exception as e:
-        print(f"[-] Download error: {e}")
-        if auto_mode:
-            sys.exit(1)
-        return
+        fail_with_popup("Download Failed", f"An unexpected error occurred during download: {e}")
 
-    # In auto mode, ask for confirmation before proceeding with install
-    if auto_mode:
-        print("\nDo you want to download and install the update? (Y/N) ", end="", flush=True)
-        start_time = time.time()
-        user_input = None
-        while time.time() - start_time < 30:
-            if msvcrt.kbhit(): # Check if a key has been pressed
-                user_input = msvcrt.getch().decode('utf-8').lower()
-                if user_input == 'y' or user_input == 'n':
-                    break
-                else:
-                    print("\nInvalid input. Please press Y or N.", end="", flush=True)
-                    start_time = time.time() # Reset timer on invalid input
-        
-        print() # Newline after input or timeout
-
-        if user_input == 'n':
-            print("[*] Update cancelled by user.")
-            sys.exit(0)
-        elif user_input == 'y':
-            print("[*] Proceeding with update...")
-        else: # Timeout or no valid input
-            print("[*] No response received. Auto-proceeding with update...")
-
-    # Create backup before installing
     backup_dir = create_backup(script_dir, APP_NAME, current_version)
     
-    # Extract and install
     if extract_and_install_update(zip_path, script_dir, APP_NAME):
-        # Update version file
-        version_file_path = os.path.join(script_dir, VERSION_FILE)
-        with open(version_file_path, 'w') as f:
+        with open(os.path.join(script_dir, VERSION_FILE), 'w') as f:
             f.write(latest_version)
         print(f"[+] Updated version to: {latest_version}")
         print("\n[+] Update installed successfully!")
     else:
         print("[-] Update failed. Restoring backup...")
         restore_backup(backup_dir, script_dir, APP_NAME)
-        if auto_mode:
-            sys.exit(1)
-        return
+        fail_with_popup("Update Failed", "Failed to extract or install the update. The application has been restored to its previous version.")
 
-    # Step 6: Start application
     if not auto_mode:
         print("\n[6/6] >> Starting application...")
-        app_path = os.path.join(script_dir, APP_NAME)
-        if os.path.exists(app_path):
-            print(f"[+] Starting {APP_NAME}...")
-            subprocess.Popen([app_path])
-            print("\n*** UPDATE COMPLETED SUCCESSFULLY! ***")
-            print(f"*** Version: {current_version} -> {latest_version} ***")
-            print("*** Enjoy your updated DeepSeek Desktop! ***")
-        else:
-            print("[-] Error: Application executable not found after update.")
-            restore_backup(backup_dir, script_dir, APP_NAME)
-    else: # auto_mode
-        app_path = os.path.join(script_dir, APP_NAME)
-        if os.path.exists(app_path):
-            print(f"[+] Starting {APP_NAME} automatically...")
-            subprocess.Popen([app_path])
-            print("\n*** UPDATE COMPLETED SUCCESSFULLY! ***")
-            print(f"*** Version: {current_version} -> {latest_version} ***")
-        else:
-            print("[-] Error: Application executable not found after update.")
-            restore_backup(backup_dir, script_dir, APP_NAME)
-            sys.exit(1)
 
-    # Cleanup
+    app_path = os.path.join(script_dir, APP_NAME)
+    if os.path.exists(app_path):
+        print(f"[+] Starting {APP_NAME}...")
+        subprocess.Popen([app_path])
+        if not auto_mode:
+            print(f"\n*** UPDATE COMPLETED SUCCESSFULLY: {current_version} -> {latest_version} ***")
+    else:
+        print("[-] Error: Application executable not found after update.")
+        restore_backup(backup_dir, script_dir, APP_NAME)
+        fail_with_popup("Update Failed", "Application executable not found after update. The application has been restored to its previous version.")
+
     print("\n[*] Cleaning up temporary files...")
     if os.path.exists(TEMP_DIR):
         shutil.rmtree(TEMP_DIR)
@@ -453,18 +340,9 @@ def main():
 
 if __name__ == "__main__":
     try:
-        # msvcrt is needed for keyboard input in auto mode
-        import msvcrt
-        main()
-    except ImportError:
-        # msvcrt is Windows-specific, provide a fallback for other OS or inform user
-        print("msvcrt module not found. Auto mode interactive prompt may not work correctly on this OS.")
-        # Fallback to non-interactive or simple input if possible
-        # For now, just run main without auto-mode specific input handling
         main()
     except KeyboardInterrupt:
         print("\n[-] Update cancelled by user.")
         sys.exit(1)
     except Exception as e:
-        print(f"\n[-] An unexpected error occurred: {e}")
-        sys.exit(1)
+        fail_with_popup("Critical Updater Error", f"An unhandled error occurred: {e}")

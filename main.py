@@ -3,6 +3,46 @@ import os
 import argparse
 import sys
 import platform
+import subprocess
+from utils.windows import show_error_popup, add_to_startup, remove_from_startup
+
+
+def get_script_directory():
+    """Returns the directory where the main script is located."""
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    else:
+        return os.path.dirname(os.path.abspath(__file__))
+
+def launch_updater():
+    """Searches for and launches the auto-updater in the background."""
+    base_dir = get_script_directory()
+    search_paths = ['.', 'built', 'utils']
+    updater_exe = 'auto-updater.exe'
+    updater_py = 'auto-update.py'
+
+    creation_flags = 0
+    if platform.system() == "Windows":
+        creation_flags = subprocess.CREATE_NEW_CONSOLE
+
+    # Search for executable first
+    for path_fragment in search_paths:
+        full_path = os.path.join(base_dir, path_fragment, updater_exe)
+        if os.path.exists(full_path):
+            _log(f"Found updater executable: {full_path}")
+            subprocess.Popen([full_path, '--auto'], creationflags=creation_flags)
+            return
+
+    # If no executable, search for python script
+    for path_fragment in search_paths:
+        full_path = os.path.join(base_dir, path_fragment, updater_py)
+        if os.path.exists(full_path):
+            _log(f"Found updater script: {full_path}")
+            subprocess.Popen([sys.executable, full_path, '--auto'], creationflags=creation_flags)
+            return
+
+    _log("Auto-updater not found in any search paths.")
+
 
 APP_TITLE = "DeepSeek - Into the Unknown"
 
@@ -215,15 +255,33 @@ def on_window_loaded(window):
     inject_js(window)
 
 def main():
-    # Parse command line arguments
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="DeepSeek Desktop Client")
     parser.add_argument('--release', action='store_true', help='Disable debug tools for release build')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--dark-titlebar', action='store_true', help='Force dark titlebar')
-    group.add_argument('--light-titlebar', action='store_true', help='Force light titlebar')
+
+    title_group = parser.add_mutually_exclusive_group()
+    title_group.add_argument('--dark-titlebar', action='store_true', help='Force dark titlebar')
+    title_group.add_argument('--light-titlebar', action='store_true', help='Force light titlebar')
+
+    startup_group = parser.add_mutually_exclusive_group()
+    startup_group.add_argument('--install-startup', action='store_true', help='Add the application to Windows startup.')
+    startup_group.add_argument('--uninstall-startup', action='store_true', help='Remove the application from Windows startup.')
+
     args = parser.parse_args()
+
+    if platform.system() == "Windows":
+        if getattr(sys, 'frozen', False):
+            app_name = "DeepSeek Desktop"
+            exe_path = sys.executable
+            if args.install_startup:
+                add_to_startup(app_name, exe_path)
+                sys.exit(0)
+            elif args.uninstall_startup:
+                remove_from_startup(app_name)
+                sys.exit(0)
+        elif args.install_startup or args.uninstall_startup:
+            print("Startup modification can only be done on the installed (frozen) application.")
+            sys.exit(1)
     
-    # Store titlebar preference globally for access in other functions
     global titlebar_preference
     if args.dark_titlebar:
         titlebar_preference = 'dark'
@@ -232,50 +290,37 @@ def main():
     else:
         titlebar_preference = 'auto'
     
-    # Auto-enable release mode for frozen builds
     is_frozen = getattr(sys, 'frozen', False)
     release_mode = args.release or is_frozen
-    # Gate verbose logs in release mode
     global VERBOSE_LOGS
     VERBOSE_LOGS = not release_mode
     
-    # Launch auto-updater in background
     try:
-        import subprocess
-        import os
-        # Check for the built auto-updater.exe first, then the source script
-        built_updater_path = os.path.join(os.path.dirname(__file__), 'built', 'auto-updater.exe')
-        source_updater_path = os.path.join(os.path.dirname(__file__), 'utils', 'auto-update.py')
-        
-        if os.path.exists(built_updater_path):
-            subprocess.Popen([built_updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
-        elif os.path.exists(source_updater_path):
-            # Fallback to running the Python script directly if .exe is not found
-            subprocess.Popen([sys.executable, source_updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
-        else:
-            print("Auto-updater not found.")
+        launch_updater()
     except Exception as e:
-        print("Failed to launch auto updater : ", e)
-        pass  # Silently continue if updater fails to launch
+        _log(f"Failed to launch auto-updater: {e}")
+        show_error_popup("Updater Error", f"Failed to start the auto-updater process.\n\nPlease check the logs for details.\n\nError: {e}")
     
-    # Create window with persistent cookie storage
     window = webview.create_window(
         APP_TITLE,
         "https://chat.deepseek.com",
         width=1200,
         height=800,
-        text_select=True # Enable selecting text (#2 vanja-san)
+        text_select=True
     )
     
-    # Add event listener for page load
     window.events.loaded += on_window_loaded
     
-    # Start webview with persistent storage
     webview.start(
-        private_mode=False,  # Disable private mode for persistent cookies
-        storage_path="./data",  # Storage directory
-        debug=not release_mode  # Enable dev tools unless in release mode
+        private_mode=False,
+        storage_path="./data",
+        debug=not release_mode
     )
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        error_message = f"A fatal error occurred and the application must close.\n\nDetails: {e}"
+        print(f"ERROR: {error_message}")
+        show_error_popup("Critical Application Error", error_message)
