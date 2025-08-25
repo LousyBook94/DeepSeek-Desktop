@@ -255,8 +255,8 @@ def main():
         else:
             print("Auto-updater not found.")
     except Exception as e:
-        print("Failed to launch auto updater : ", e)
-        pass  # Silently continue if updater fails to launch
+        _log(f"Failed to launch auto-updater: {e}")
+        # Silently continue if updater fails to launch
     
     # Create window with persistent cookie storage
     window = webview.create_window(

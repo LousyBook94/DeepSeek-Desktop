@@ -230,6 +230,7 @@ def test_find_window_handle_windows_no_ctypes(mocker):
 
 def test_find_window_handle_success_with_findwindoww(mocker):
     """Test finding a window successfully with FindWindowW."""
+    mocker.patch('platform.system', return_value='Windows')
     mock_ctypes = mocker.patch('main.ctypes', create=True)
     mock_user32 = mock_ctypes.windll.user32
     mock_user32.FindWindowW.return_value = 12345  # Mock HWND
@@ -285,6 +286,7 @@ def test_find_window_handle_success_with_enumwindows(mocker):
 
 def test_find_window_handle_not_found(mocker):
     """Test when no window is found by either method."""
+    mocker.patch('platform.system', return_value='Windows')
     mock_ctypes = mocker.patch('main.ctypes', create=True)
     mock_user32 = mock_ctypes.windll.user32
     mock_user32.FindWindowW.return_value = None
@@ -293,6 +295,7 @@ def test_find_window_handle_not_found(mocker):
 
 def test_find_window_handle_exception(mocker):
     """Test that an exception during window finding is caught."""
+    mocker.patch('platform.system', return_value='Windows')
     mock_ctypes = mocker.patch('main.ctypes', create=True)
     mock_ctypes.windll.user32.FindWindowW.side_effect = Exception("Test Exception")
     assert main.find_window_handle("some_title") is None
