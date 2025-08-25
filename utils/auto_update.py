@@ -9,8 +9,18 @@ import subprocess
 import time
 import re
 import argparse
+import platform
 from datetime import datetime
 from tqdm import tqdm
+
+# Import Windows-specific modules only on Windows
+if platform.system() == "Windows":
+    try:
+        import msvcrt
+    except ImportError:
+        msvcrt = None
+else:
+    msvcrt = None
 
 # --- Configuration ---
 APP_NAME = "DeepSeekChat.exe"
@@ -95,6 +105,9 @@ def compare_versions(current, latest):
 
 def bring_console_to_front():
     """Brings the console window to the front (Windows only)."""
+    if platform.system() != "Windows":
+        return  # Skip on non-Windows systems
+    
     try:
         subprocess.run([
             'powershell',
@@ -280,18 +293,24 @@ def main():
     # Step 1: Check if application is running
     if not auto_mode:
         print("[1/6] >> Checking if application is running...")
-    try:
-        # Check if the process is running
-        subprocess.check_output(f'tasklist /FI "IMAGENAME eq {APP_NAME}" /FO CSV | find "{APP_NAME}"', shell=True, stderr=subprocess.DEVNULL)
+    
+    if platform.system() == "Windows":
+        try:
+            # Check if the process is running
+            subprocess.check_output(f'tasklist /FI "IMAGENAME eq {APP_NAME}" /FO CSV | find "{APP_NAME}"', shell=True, stderr=subprocess.DEVNULL)
+            if not auto_mode:
+                print(f"[*] {APP_NAME} is running. Attempting to close...")
+            subprocess.run(f'taskkill /F /IM "{APP_NAME}"', shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(3) # Wait for process to terminate
+            if not auto_mode:
+                print(f"[+] {APP_NAME} closed.")
+        except subprocess.CalledProcessError:
+            if not auto_mode:
+                print(f"[+] {APP_NAME} is not running.")
+    else:
+        # On non-Windows systems, skip process checking since this is a Windows-only app
         if not auto_mode:
-            print(f"[*] {APP_NAME} is running. Attempting to close...")
-        subprocess.run(f'taskkill /F /IM "{APP_NAME}"', shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(3) # Wait for process to terminate
-        if not auto_mode:
-            print(f"[+] {APP_NAME} closed.")
-    except subprocess.CalledProcessError:
-        if not auto_mode:
-            print(f"[+] {APP_NAME} is not running.")
+            print(f"[+] {APP_NAME} is not running (non-Windows system).")
 
     # Step 2: Get current version
     if not auto_mode:
@@ -383,14 +402,22 @@ def main():
         print("\nDo you want to download and install the update? (Y/N) ", end="", flush=True)
         start_time = time.time()
         user_input = None
-        while time.time() - start_time < 30:
-            if msvcrt.kbhit(): # Check if a key has been pressed
-                user_input = msvcrt.getch().decode('utf-8').lower()
-                if user_input == 'y' or user_input == 'n':
-                    break
-                else:
-                    print("\nInvalid input. Please press Y or N.", end="", flush=True)
-                    start_time = time.time() # Reset timer on invalid input
+        
+        if msvcrt is not None:
+            # Windows: Use msvcrt for non-blocking input
+            while time.time() - start_time < 30:
+                if msvcrt.kbhit(): # Check if a key has been pressed
+                    user_input = msvcrt.getch().decode('utf-8').lower()
+                    if user_input == 'y' or user_input == 'n':
+                        break
+                    else:
+                        print("\nInvalid input. Please press Y or N.", end="", flush=True)
+                        start_time = time.time() # Reset timer on invalid input
+        else:
+            # Non-Windows: Use simple input with timeout message
+            print("\n[*] Running on non-Windows system. Auto-proceeding with update in 5 seconds...")
+            time.sleep(5)
+            user_input = 'y'  # Auto-proceed on non-Windows systems
         
         print() # Newline after input or timeout
 
@@ -453,18 +480,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        # msvcrt is needed for keyboard input in auto mode
-        import msvcrt
-        main()
-    except ImportError:
-        # msvcrt is Windows-specific, provide a fallback for other OS or inform user
-        print("msvcrt module not found. Auto mode interactive prompt may not work correctly on this OS.")
-        # Fallback to non-interactive or simple input if possible
-        # For now, just run main without auto-mode specific input handling
         main()
     except KeyboardInterrupt:
         print("\n[-] Update cancelled by user.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n[-] An unexpected error occurred: {e}")
         sys.exit(1)
