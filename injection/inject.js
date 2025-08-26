@@ -1187,7 +1187,7 @@ function initTextReplacement(targetElement) {
     function updateFooterVersion(version) {
         const existingFooter = document.querySelector('.deepseek-footer');
         if (existingFooter) {
-            existingFooter.innerHTML = `Made by <a href='https://github.com/LousyBook94' target='_blank' style='opacity: 0.7;'>LousyBook01</a>. Powered by <a href='https://deepseek.com/' target='_blank' style='opacity: 0.7;'>DeepSeek</a>. Icons by <a href='https://icons8.com/' target='_blank' style='opacity: 0.7;'>Icons8</a> V${version}`;
+            existingFooter.textContent = `Made by LousyBook01. Powered by DeepSeek. Icons by Icons8 V${version}`;
         }
     }
     
