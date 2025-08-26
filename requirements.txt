@@ -2,3 +2,4 @@ pywebview
 pyinstaller
 requests
 tqdm
+rich

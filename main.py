@@ -267,6 +267,33 @@ def main():
     # Add event listener for page load
     window.events.loaded += on_window_loaded
     
+    # Create a local server to serve static files like version.txt
+    import http.server
+    import socketserver
+    import threading
+    import os
+    
+    class FileHandler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=".", **kwargs)
+        
+        def end_headers(self):
+            # Add CORS headers to allow access from the webview
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET')
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+            return super().end_headers()
+    
+    def start_http_server():
+        # Start server on port 8080
+        with socketserver.TCPServer(("", 8080), FileHandler) as httpd:
+            print("HTTP server running on port 8080")
+            httpd.serve_forever()
+    
+    # Start HTTP server in a separate thread
+    server_thread = threading.Thread(target=start_http_server, daemon=True)
+    server_thread.start()
+    
     # Start webview with persistent storage
     webview.start(
         private_mode=False,  # Disable private mode for persistent cookies
