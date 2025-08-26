@@ -1,3 +1,4 @@
 pywebview
 pyinstaller
+requests
 tqdm

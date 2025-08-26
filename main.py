@@ -243,19 +243,16 @@ def main():
     try:
         import subprocess
         import os
-        # Check for the built auto-updater.exe first, then the source script
-        built_updater_path = os.path.join(os.path.dirname(__file__), 'built', 'auto-updater.exe')
-        source_updater_path = os.path.join(os.path.dirname(__file__), 'utils', 'auto-update.py')
+        # Path to the auto-updater script
+        updater_path = os.path.join(os.path.dirname(__file__), 'utils', 'auto_update.py')
         
-        if os.path.exists(built_updater_path):
-            subprocess.Popen([built_updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
-        elif os.path.exists(source_updater_path):
-            # Fallback to running the Python script directly if .exe is not found
-            subprocess.Popen([sys.executable, source_updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        if os.path.exists(updater_path):
+            # Add --debug flag for updater console visibility
+            subprocess.Popen([sys.executable, updater_path, '--auto', '--debug'], creationflags=subprocess.CREATE_NEW_CONSOLE)
         else:
             print("Auto-updater not found.")
     except Exception as e:
-        print("Failed to launch auto updater : ", e)
+        print("Failed to launch auto updater: ", e)
         pass  # Silently continue if updater fails to launch
     
     # Create window with persistent cookie storage
