@@ -214,6 +214,86 @@ def on_window_loaded(window):
     # Inject JavaScript
     inject_js(window)
 
+def launch_auto_updater():
+    """Launch the auto-updater with enhanced search and error handling"""
+    import subprocess
+    
+    def show_windows_error_dialog(title, message):
+        """Display a native Windows error dialog using ctypes"""
+        if platform.system() == "Windows" and ctypes:
+            try:
+                MB_ICONERROR = 0x00000010
+                MB_OK = 0x00000000
+                
+                # Create message box
+                result = ctypes.windll.user32.MessageBoxW(
+                    0,  # Handle to owner window
+                    message,  # Message text
+                    title,  # Dialog title
+                    MB_ICONERROR | MB_OK  # Style
+                )
+            except Exception as e:
+                print(f"Failed to show Windows error dialog: {e}")
+        else:
+            print(f"Error: {title} - {message}")
+    
+    def find_updater():
+        """Search for auto-updater executable or Python script in specified locations"""
+        # Define search locations in order of priority
+        search_locations = [
+            os.getcwd(),  # Current working directory
+            os.path.join(os.path.dirname(__file__), 'build'),  # build/ directory
+            os.path.join(os.path.dirname(__file__), 'utils')  # utils/ directory
+        ]
+        
+        # Define possible updater names
+        executable_names = ['auto-updater.exe']
+        script_names = ['auto-updater.py', 'auto_update.py']
+        
+        # Check for executable first
+        for location in search_locations:
+            for name in executable_names:
+                potential_path = os.path.join(location, name)
+                if os.path.exists(potential_path):
+                    return potential_path, 'executable'
+        
+        # If executable not found, check for Python script
+        for location in search_locations:
+            for name in script_names:
+                potential_path = os.path.join(location, name)
+                if os.path.exists(potential_path):
+                    return potential_path, 'script'
+        
+        return None, None
+    
+    try:
+        # Find the updater
+        updater_path, updater_type = find_updater()
+        
+        if updater_path:
+            try:
+                if updater_type == 'executable':
+                    # Launch executable directly
+                    subprocess.Popen([updater_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    _log(f"Launched auto-updater executable: {updater_path}")
+                else:  # script
+                    # Launch Python script with appropriate flags
+                    subprocess.Popen([sys.executable, updater_path, '--auto', '--debug'], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    _log(f"Launched auto-updater script: {updater_path}")
+            except Exception as launch_error:
+                error_msg = f"Failed to launch auto-updater: {launch_error}"
+                _log(error_msg)
+                show_windows_error_dialog("Auto-Updater Launch Error", error_msg)
+        else:
+            error_msg = "Auto-updater not found in any of the expected locations."
+            _log(error_msg)
+            show_windows_error_dialog("Auto-Updater Not Found", error_msg)
+            
+    except Exception as e:
+        error_msg = f"Unexpected error launching auto updater: {e}"
+        _log(error_msg)
+        show_windows_error_dialog("Auto-Updater Error", error_msg)
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
@@ -240,20 +320,7 @@ def main():
     VERBOSE_LOGS = not release_mode
     
     # Launch auto-updater in background
-    try:
-        import subprocess
-        import os
-        # Path to the auto-updater script
-        updater_path = os.path.join(os.path.dirname(__file__), 'utils', 'auto_update.py')
-        
-        if os.path.exists(updater_path):
-            # Add --debug flag for updater console visibility
-            subprocess.Popen([sys.executable, updater_path, '--auto', '--debug'], creationflags=subprocess.CREATE_NEW_CONSOLE)
-        else:
-            print("Auto-updater not found.")
-    except Exception as e:
-        print("Failed to launch auto updater: ", e)
-        pass  # Silently continue if updater fails to launch
+    launch_auto_updater()
     
     # Create window with persistent cookie storage
     window = webview.create_window(
