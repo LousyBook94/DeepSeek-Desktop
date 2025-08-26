@@ -1187,7 +1187,42 @@ function initTextReplacement(targetElement) {
     function updateFooterVersion(version) {
         const existingFooter = document.querySelector('.deepseek-footer');
         if (existingFooter) {
-            existingFooter.textContent = `Made by LousyBook01. Powered by DeepSeek. Icons by Icons8 V${version}`;
+            // Create a safe document fragment with links
+            const fragment = document.createDocumentFragment();
+            
+            // Made by link
+            const madeByLink = document.createElement('a');
+            madeByLink.href = 'https://github.com/LousyBook94';
+            madeByLink.target = '_blank';
+            madeByLink.textContent = 'LousyBook01';
+            madeByLink.style.opacity = '0.7';
+            fragment.appendChild(document.createTextNode('Made by '));
+            fragment.appendChild(madeByLink);
+            fragment.appendChild(document.createTextNode('. '));
+            
+            // Powered by link
+            const poweredByLink = document.createElement('a');
+            poweredByLink.href = 'https://deepseek.com/';
+            poweredByLink.target = '_blank';
+            poweredByLink.textContent = 'DeepSeek';
+            poweredByLink.style.opacity = '0.7';
+            fragment.appendChild(document.createTextNode('Powered by '));
+            fragment.appendChild(poweredByLink);
+            fragment.appendChild(document.createTextNode('. '));
+            
+            // Icons by link
+            const iconsByLink = document.createElement('a');
+            iconsByLink.href = 'https://icons8.com/';
+            iconsByLink.target = '_blank';
+            iconsByLink.textContent = 'Icons8';
+            iconsByLink.style.opacity = '0.7';
+            fragment.appendChild(document.createTextNode('Icons by '));
+            fragment.appendChild(iconsByLink);
+            fragment.appendChild(document.createTextNode(` V${version}`));
+            
+            // Clear existing content and add the new fragment
+            existingFooter.innerHTML = '';
+            existingFooter.appendChild(fragment);
         }
     }
     
