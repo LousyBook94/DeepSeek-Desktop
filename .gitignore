@@ -23,4 +23,14 @@ dist/
 
 # Environment variables
 .env
+
+# Auto-updater artifacts
 /utils/auto-updater.exe
+utils/*.exe
+utils/*.ico
+utils/backup_*/
+utils/version.txt
+version.txt
+
+# Injection files (generated at runtime)
+utils/injection/
