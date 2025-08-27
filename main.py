@@ -343,20 +343,47 @@ def main():
     class FileHandler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=".", **kwargs)
-        
+
         def end_headers(self):
             # Add CORS headers to allow access from the webview
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Methods', 'GET')
             self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
             return super().end_headers()
-    
+
+        def do_GET(self):
+            if self.path == '/port':
+                # Return the actual port number
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write(str(self.server.server_address[1]).encode())
+            else:
+                # Handle other requests normally
+                super().do_GET()
+
+    def find_available_port(start_port=8080, max_attempts=100):
+        """Find an available port starting from start_port"""
+        import socket
+        for port in range(start_port, start_port + max_attempts):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    sock.bind(("", port))
+                    return port
+            except OSError:
+                continue
+        raise OSError(f"No available ports found in range {start_port}-{start_port + max_attempts - 1}")
+
     def start_http_server():
-        # Start server on port 8080
-        with socketserver.TCPServer(("", 8080), FileHandler) as httpd:
-            print("HTTP server running on port 8080")
-            httpd.serve_forever()
-    
+        # Find an available port starting from 8080
+        try:
+            port = find_available_port(8080)
+            with socketserver.TCPServer(("", port), FileHandler) as httpd:
+                print(f"HTTP server running on port {port}")
+                httpd.serve_forever()
+        except OSError as e:
+            print(f"Failed to start HTTP server: {e}")
+
     # Start HTTP server in a separate thread
     server_thread = threading.Thread(target=start_http_server, daemon=True)
     server_thread.start()

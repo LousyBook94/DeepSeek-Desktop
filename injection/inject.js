@@ -445,23 +445,61 @@ function createRefreshButton() {
     loadingIndicator.className = 'loading-indicator';
     document.body.appendChild(loadingIndicator);
     
+    // Global variable to store the server port
+    let serverPort = 8080;
+
+    // Get the actual server port with fallback
+    function getServerPort() {
+        // If we already know the port, return it
+        if (serverPort !== 8080) {
+            return Promise.resolve(serverPort);
+        }
+
+        // Try multiple common ports as fallback
+        const portsToTry = [8080, 8081, 8082, 8083, 8084, 8085];
+
+        function tryPort(port) {
+            return fetch(`http://localhost:${port}/port`)
+                .then(response => response.text())
+                .then(portStr => {
+                    const actualPort = parseInt(portStr, 10);
+                    serverPort = actualPort;
+                    return actualPort;
+                });
+        }
+
+        // Try each port sequentially
+        let lastError;
+        return portsToTry.reduce((promise, port) => {
+            return promise.catch(error => {
+                lastError = error;
+                return tryPort(port);
+            });
+        }, Promise.reject(new Error('Starting port check'))).catch(error => {
+            console.warn('Could not fetch server port from any port, using default 8080:', lastError || error);
+            return 8080;
+        });
+    }
+
     // Load version from local server
     function loadVersion() {
-        fetch('http://localhost:8080/version.txt')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.text();
-            })
-            .then(version => {
-                const versionNumber = version.trim();
-                document.getElementById('version-number').textContent = versionNumber;
-            })
-            .catch(error => {
-                console.error('Error loading version:', error);
-                document.getElementById('version-number').textContent = '0.0.0';
-            });
+        getServerPort().then(port => {
+            fetch(`http://localhost:${port}/version.txt`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(version => {
+                    const versionNumber = version.trim();
+                    document.getElementById('version-number').textContent = versionNumber;
+                })
+                .catch(error => {
+                    console.error('Error loading version:', error);
+                    document.getElementById('version-number').textContent = '0.0.0';
+                });
+        });
     }
     
     // Load version immediately
@@ -1162,22 +1200,24 @@ function initTextReplacement(targetElement) {
     // Load version if not in localStorage
     function loadVersionIfNeeded() {
         if (!localStorage.getItem('deepseek-version')) {
-            fetch('http://localhost:8080/version.txt')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.text();
-                })
-                .then(version => {
-                    const versionNumber = version.trim();
-                    localStorage.setItem('deepseek-version', versionNumber);
-                    updateFooterVersion(versionNumber);
-                })
-                .catch(error => {
-                    console.error('Error loading version:', error);
-                    updateFooterVersion('0.0.0');
-                });
+            getServerPort().then(port => {
+                fetch(`http://localhost:${port}/version.txt`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(version => {
+                        const versionNumber = version.trim();
+                        localStorage.setItem('deepseek-version', versionNumber);
+                        updateFooterVersion(versionNumber);
+                    })
+                    .catch(error => {
+                        console.error('Error loading version:', error);
+                        updateFooterVersion('0.0.0');
+                    });
+            });
         } else {
             updateFooterVersion(getVersion());
         }
@@ -1232,27 +1272,55 @@ function initTextReplacement(targetElement) {
     // Load version
     loadVersionIfNeeded();
     
-    // Check for version updates periodically
-    setInterval(() => {
-        fetch('http://localhost:8080/version.txt')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.text();
-            })
-            .then(version => {
-                const versionNumber = version.trim();
-                const currentVersion = localStorage.getItem('deepseek-version');
-                if (currentVersion !== versionNumber) {
-                    localStorage.setItem('deepseek-version', versionNumber);
-                    updateFooterVersion(versionNumber);
-                }
-            })
-            .catch(error => {
-                console.error('Error checking for version update:', error);
+    // Global variable for tracking consecutive failures
+    let versionCheckFailures = 0;
+    const MAX_FAILURES = 5;
+    const BASE_INTERVAL = 300000; // 5 minutes
+
+    // Check for version updates periodically with exponential backoff
+    function scheduleVersionCheck() {
+        // Calculate interval with exponential backoff
+        const backoffMultiplier = Math.min(Math.pow(2, versionCheckFailures), 16); // Max 16x multiplier
+        const interval = BASE_INTERVAL * backoffMultiplier;
+
+        setTimeout(() => {
+            getServerPort().then(port => {
+                fetch(`http://localhost:${port}/version.txt`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(version => {
+                        const versionNumber = version.trim();
+                        const currentVersion = localStorage.getItem('deepseek-version');
+                        if (currentVersion !== versionNumber) {
+                            localStorage.setItem('deepseek-version', versionNumber);
+                            updateFooterVersion(versionNumber);
+                        }
+                        // Reset failure counter on success
+                        versionCheckFailures = 0;
+                    })
+                    .catch(error => {
+                        console.error('Error checking for version update:', error);
+                        versionCheckFailures = Math.min(versionCheckFailures + 1, MAX_FAILURES);
+                    })
+                    .finally(() => {
+                        // Schedule next check regardless of success/failure
+                        scheduleVersionCheck();
+                    });
+            }).catch(error => {
+                console.error('Error getting server port for version check:', error);
+                versionCheckFailures = Math.min(versionCheckFailures + 1, MAX_FAILURES);
+                // Still schedule next check even if port fetch fails
+                scheduleVersionCheck();
             });
-    }, 30000); // Check every 30 seconds
+        }, interval);
+    }
+
+    // Start the periodic version check
+    scheduleVersionCheck();
 }
 
 // Track initialized text replacement elements
