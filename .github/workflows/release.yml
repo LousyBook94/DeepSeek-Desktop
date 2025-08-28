@@ -3,14 +3,14 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1.60"
+  VERSION: "0.1.61"
   RELEASE_BODY: |
-    🚀 V__VERSION__ released with Improved Markdown Code Block Rendering! ✨
+    🚀 V__VERSION__ released with a new updater, and new UI ✨
     
-    ### What's New
-    - Fixed code block display issues
-    - Improved markdown parsing
-    - Resolves #11
+    ### What's new
+    - Fixed updater @vanja-san #13
+    - Some new UI elements
+    - Better updater workflow
 
 jobs:
   build-and-release:

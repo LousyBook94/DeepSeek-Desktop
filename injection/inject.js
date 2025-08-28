@@ -20,6 +20,16 @@ function createRefreshButton() {
     refreshButton.id = 'deepseek-refresh-btn';
     refreshButton.title = 'Refresh Screen';
     
+    // Create version tooltip element
+    const versionTooltip = document.createElement('div');
+    versionTooltip.id = 'deepseek-version-tooltip';
+    versionTooltip.innerHTML = `
+        <div class="tooltip-pointer"></div>
+        <div class="tooltip-content">
+            <p>Version <span id="version-number">0.0.0</span></p>
+        </div>
+    `;
+    
     // Create SVG icon
     const svgIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svgIcon.setAttribute('width', '16');
@@ -41,8 +51,17 @@ function createRefreshButton() {
     const refreshPopup = document.createElement('div');
     refreshPopup.id = 'deepseek-refresh-popup';
     refreshPopup.innerHTML = `
-        <div class="spinner"></div>
-        <p class="popup-text">Refreshing...</p>
+        <div class="refresh-icon-container">
+            <div class="spinner"></div>
+            <div class="refresh-icon">🔄</div>
+        </div>
+        <div class="popup-content">
+            <h3 class="popup-title">Refreshing</h3>
+            <p class="popup-text">Please wait while we update your content...</p>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
     `;
     
     // Create welcome tooltip
@@ -57,7 +76,359 @@ function createRefreshButton() {
     
     // Apply beautiful styling
     const style = document.createElement('style');
-    style.textContent = '#deepseek-refresh-trigger{position:fixed;top:15px;right:15px;z-index:10000;width:12px;height:12px;background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);border-radius:50%;cursor:pointer;transition:all 0.3s ease;border:1px solid rgba(255,255,255,0.3);}#deepseek-refresh-trigger:hover{transform:scale(1.2);background:rgba(255,255,255,0.3);}#deepseek-refresh-btn{position:fixed;top:50px;right:15px;z-index:9999;width:36px;height:36px;border-radius:8px;border:none;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);color:white;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.1);transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(-10px);pointer-events:none;}#deepseek-refresh-trigger:hover + #deepseek-refresh-btn{opacity:1;transform:translateY(0);pointer-events:auto;}#deepseek-refresh-btn:hover{background:rgba(255,255,255,0.2);transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,0.15);}#deepseek-refresh-btn:active{transform:scale(0.95);}@keyframes rotate{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}#deepseek-refresh-btn.refreshing{animation:rotate 1s linear infinite;}#deepseek-refresh-btn svg{width:16px;height:16px;stroke:white;stroke-width:2;}#deepseek-refresh-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10001;background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);padding:20px 30px;border-radius:12px;color:white;text-align:center;display:none;box-shadow:0 10px 30px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);}#deepseek-refresh-popup.show{display:block;animation:fadeIn 0.3s ease;}#deepseek-refresh-popup .spinner{width:40px;height:40px;margin:0 auto 15px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite;}#deepseek-refresh-popup .popup-text{margin:0;font-size:14px;font-weight:500;}#deepseek-welcome-tooltip{position:fixed;z-index:9998;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:4px 8px;border-radius:4px;color:white;font-size:12px;max-width:140px;opacity:0;transition:all 0.3s ease;pointer-events:none;border:1px solid rgba(255,255,255,0.15);}#deepseek-welcome-tooltip.show{opacity:1;}#deepseek-welcome-tooltip .tooltip-pointer{position:absolute;top:50%;right:-6px;width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:4px solid rgba(255,255,255,0.1);transform:translateY(-50%);}#deepseek-welcome-tooltip .tooltip-content{margin:0;}@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}@keyframes fadeIn{from{opacity:0;transform:translate(-50%,-50%) scale(0.9);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}body.dark-mode #deepseek-refresh-popup{background:rgba(255,255,255,0.95);color:#333;border:1px solid rgba(0,0,0,0.1);}body.dark-mode #deepseek-refresh-popup .spinner{border-top-color:#333;}.loading-indicator{position:fixed;top:0;left:0;width:100%;height:3px;background:rgba(102,126,234,0.2);z-index:10002;} .loading-indicator::after{content:"";position:absolute;top:0;left:0;width:30%;height:100%;background:linear-gradient(90deg,transparent,#667eea,transparent);animation:loading 1.5s infinite;} @keyframes loading{0%{left:-30%;}100%{left:100%;}}';
+    style.textContent = `
+        #deepseek-refresh-trigger {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 10000;
+            width: 12px;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        #deepseek-refresh-trigger:hover {
+            transform: scale(1.2);
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        #deepseek-refresh-btn {
+            position: fixed;
+            top: 50px;
+            right: 15px;
+            z-index: 9999;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+        }
+        
+        #deepseek-refresh-trigger:hover + #deepseek-refresh-btn {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        
+        #deepseek-refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        #deepseek-refresh-btn:active {
+            transform: scale(0.95);
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        #deepseek-refresh-btn.refreshing {
+            animation: rotate 1s linear infinite;
+        }
+        
+        #deepseek-refresh-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: white;
+            stroke-width: 2;
+        }
+        
+        #deepseek-refresh-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10001;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px 40px;
+            border-radius: 16px;
+            color: white;
+            text-align: center;
+            display: none;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 280px;
+        }
+        
+        #deepseek-refresh-popup.show {
+            display: block;
+            animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .refresh-icon-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+        }
+        
+        .spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 15px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .refresh-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .popup-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .popup-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            color: #667eea;
+            letter-spacing: 0.5px;
+        }
+        
+        .popup-text {
+            font-size: 14px;
+            font-weight: 400;
+            margin: 0 0 20px 0;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+            width: 0%;
+            animation: progress 2s ease-out forwards;
+        }
+        
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+        
+        #deepseek-welcome-tooltip {
+            position: fixed;
+            z-index: 9998;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            max-width: 160px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        #deepseek-welcome-tooltip.show {
+            opacity: 1;
+        }
+        
+        #deepseek-welcome-tooltip .tooltip-pointer {
+            position: absolute;
+            top: 50%;
+            right: -6px;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 6px solid rgba(15, 23, 42, 0.9);
+            transform: translateY(-50%);
+        }
+        
+        #deepseek-welcome-tooltip .tooltip-content {
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        #deepseek-version-tooltip {
+            position: fixed;
+            z-index: 9997;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: white;
+            font-size: 13px;
+            max-width: 200px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        #deepseek-version-tooltip.show {
+            opacity: 1;
+        }
+        
+        #deepseek-version-tooltip .tooltip-pointer {
+            position: absolute;
+            top: 50%;
+            right: -6px;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 6px solid rgba(15, 23, 42, 0.9);
+            transform: translateY(-50%);
+        }
+        
+        #deepseek-version-tooltip .tooltip-content {
+            margin: 0;
+        }
+        
+        .version-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .version-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .version-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .version-number {
+            font-weight: 700;
+            color: #764ba2;
+            font-size: 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        body.dark-mode #deepseek-refresh-popup {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        body.dark-mode #deepseek-refresh-popup .spinner {
+            border-top-color: #333;
+        }
+        
+        body.dark-mode #deepseek-refresh-popup .popup-title {
+            color: #5a67d8;
+        }
+        
+        .loading-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(102, 126, 234, 0.2);
+            z-index: 10002;
+        }
+        
+        .loading-indicator::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            animation: loading 2s infinite;
+        }
+        
+        @keyframes loading {
+            0% {
+                left: -20px;
+                top: 0;
+            }
+            25% {
+                left: 100%;
+                top: 0;
+            }
+            50% {
+                left: 100%;
+                top: calc(100% - 2px);
+            }
+            75% {
+                left: -20px;
+                top: calc(100% - 2px);
+            }
+            100% {
+                left: -20px;
+                top: 0;
+            }
+        }
+    `;
     
     // Add styles to head
     document.head.appendChild(style);
@@ -67,11 +438,72 @@ function createRefreshButton() {
     document.body.appendChild(refreshButton);
     document.body.appendChild(refreshPopup);
     document.body.appendChild(welcomeTooltip);
+    document.body.appendChild(versionTooltip);
     
     // Create loading indicator
     const loadingIndicator = document.createElement('div');
     loadingIndicator.className = 'loading-indicator';
     document.body.appendChild(loadingIndicator);
+    
+    // Global variable to store the server port
+    let serverPort = 8080;
+
+    // Get the actual server port with fallback
+    function getServerPort() {
+        // If we already know the port, return it
+        if (serverPort !== 8080) {
+            return Promise.resolve(serverPort);
+        }
+
+        // Try multiple common ports as fallback
+        const portsToTry = [8080, 8081, 8082, 8083, 8084, 8085];
+
+        function tryPort(port) {
+            return fetch(`http://localhost:${port}/port`)
+                .then(response => response.text())
+                .then(portStr => {
+                    const actualPort = parseInt(portStr, 10);
+                    serverPort = actualPort;
+                    return actualPort;
+                });
+        }
+
+        // Try each port sequentially
+        let lastError;
+        return portsToTry.reduce((promise, port) => {
+            return promise.catch(error => {
+                lastError = error;
+                return tryPort(port);
+            });
+        }, Promise.reject(new Error('Starting port check'))).catch(error => {
+            console.warn('Could not fetch server port from any port, using default 8080:', lastError || error);
+            return 8080;
+        });
+    }
+
+    // Load version from local server
+    function loadVersion() {
+        getServerPort().then(port => {
+            fetch(`http://localhost:${port}/version.txt`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(version => {
+                    const versionNumber = version.trim();
+                    document.getElementById('version-number').textContent = versionNumber;
+                })
+                .catch(error => {
+                    console.error('Error loading version:', error);
+                    document.getElementById('version-number').textContent = '0.0.0';
+                });
+        });
+    }
+    
+    // Load version immediately
+    loadVersion();
     
     // Show welcome tooltip on page load
     setTimeout(() => {
@@ -165,6 +597,23 @@ function createRefreshButton() {
     refreshButton.addEventListener('mouseenter', showRefreshButton);
     triggerButton.addEventListener('mouseleave', hideRefreshButton);
     refreshButton.addEventListener('mouseleave', hideRefreshButton);
+    
+    // Add event listeners for version tooltip
+    function showVersionTooltip() {
+        const triggerRect = triggerButton.getBoundingClientRect();
+        versionTooltip.style.top = (triggerRect.top - 5) + 'px';
+        versionTooltip.style.right = (window.innerWidth - triggerRect.right + 60) + 'px';
+        versionTooltip.classList.add('show');
+    }
+    
+    function hideVersionTooltip() {
+        versionTooltip.classList.remove('show');
+    }
+    
+    triggerButton.addEventListener('mouseenter', showVersionTooltip);
+    refreshButton.addEventListener('mouseenter', showVersionTooltip);
+    triggerButton.addEventListener('mouseleave', hideVersionTooltip);
+    refreshButton.addEventListener('mouseleave', hideVersionTooltip);
     
     // Initially hide the refresh button
     hideRefreshButton();
@@ -743,7 +1192,135 @@ function styleCodeBlocks(element) {
 
 // Function to initialize text replacement
 function initTextReplacement(targetElement) {
-    targetElement.innerHTML = "Made by <a href='https://github.com/LousyBook94' target='_blank' style='opacity: 0.7;'>LousyBook01</a>. Powered by <a href='https://deepseek.com/' target='_blank' style='opacity: 0.7;'>DeepSeek</a>. Icons by <a href='https://icons8.com/' target='_blank' style='opacity: 0.7;'>Icons8</a>";
+    // Get version from localStorage or fetch it
+    function getVersion() {
+        return localStorage.getItem('deepseek-version') || '0.0.0';
+    }
+    
+    // Load version if not in localStorage
+    function loadVersionIfNeeded() {
+        if (!localStorage.getItem('deepseek-version')) {
+            getServerPort().then(port => {
+                fetch(`http://localhost:${port}/version.txt`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(version => {
+                        const versionNumber = version.trim();
+                        localStorage.setItem('deepseek-version', versionNumber);
+                        updateFooterVersion(versionNumber);
+                    })
+                    .catch(error => {
+                        console.error('Error loading version:', error);
+                        updateFooterVersion('0.0.0');
+                    });
+            });
+        } else {
+            updateFooterVersion(getVersion());
+        }
+    }
+    
+    // Update footer with version
+    function updateFooterVersion(version) {
+        const existingFooter = document.querySelector('.deepseek-footer');
+        if (existingFooter) {
+            // Create a safe document fragment with links
+            const fragment = document.createDocumentFragment();
+            
+            // Made by link
+            const madeByLink = document.createElement('a');
+            madeByLink.href = 'https://github.com/LousyBook94';
+            madeByLink.target = '_blank';
+            madeByLink.textContent = 'LousyBook01';
+            madeByLink.style.opacity = '0.7';
+            fragment.appendChild(document.createTextNode('Made by '));
+            fragment.appendChild(madeByLink);
+            fragment.appendChild(document.createTextNode('. '));
+            
+            // Powered by link
+            const poweredByLink = document.createElement('a');
+            poweredByLink.href = 'https://deepseek.com/';
+            poweredByLink.target = '_blank';
+            poweredByLink.textContent = 'DeepSeek';
+            poweredByLink.style.opacity = '0.7';
+            fragment.appendChild(document.createTextNode('Powered by '));
+            fragment.appendChild(poweredByLink);
+            fragment.appendChild(document.createTextNode('. '));
+            
+            // Icons by link
+            const iconsByLink = document.createElement('a');
+            iconsByLink.href = 'https://icons8.com/';
+            iconsByLink.target = '_blank';
+            iconsByLink.textContent = 'Icons8';
+            iconsByLink.style.opacity = '0.7';
+            fragment.appendChild(document.createTextNode('Icons by '));
+            fragment.appendChild(iconsByLink);
+            fragment.appendChild(document.createTextNode(` V${version}`));
+            
+            // Clear existing content and add the new fragment
+            existingFooter.innerHTML = '';
+            existingFooter.appendChild(fragment);
+        }
+    }
+    
+    // Create footer with version
+    targetElement.innerHTML = `<div class="deepseek-footer">Made by <a href='https://github.com/LousyBook94' target='_blank' style='opacity: 0.7;'>LousyBook01</a>. Powered by <a href='https://deepseek.com/' target='_blank' style='opacity: 0.7;'>DeepSeek</a>. Icons by <a href='https://icons8.com/' target='_blank' style='opacity: 0.7;'>Icons8</a> <span class="version-loading">V...</span></div>`;
+    
+    // Load version
+    loadVersionIfNeeded();
+    
+    // Global variable for tracking consecutive failures
+    let versionCheckFailures = 0;
+    const MAX_FAILURES = 5;
+    const BASE_INTERVAL = 300000; // 5 minutes
+
+    // Check for version updates periodically with exponential backoff
+    function scheduleVersionCheck() {
+        // Calculate interval with exponential backoff
+        const backoffMultiplier = Math.min(Math.pow(2, versionCheckFailures), 16); // Max 16x multiplier
+        const interval = BASE_INTERVAL * backoffMultiplier;
+
+        setTimeout(() => {
+            getServerPort().then(port => {
+                fetch(`http://localhost:${port}/version.txt`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(version => {
+                        const versionNumber = version.trim();
+                        const currentVersion = localStorage.getItem('deepseek-version');
+                        if (currentVersion !== versionNumber) {
+                            localStorage.setItem('deepseek-version', versionNumber);
+                            updateFooterVersion(versionNumber);
+                        }
+                        // Reset failure counter on success
+                        versionCheckFailures = 0;
+                    })
+                    .catch(error => {
+                        console.error('Error checking for version update:', error);
+                        versionCheckFailures = Math.min(versionCheckFailures + 1, MAX_FAILURES);
+                    })
+                    .finally(() => {
+                        // Schedule next check regardless of success/failure
+                        scheduleVersionCheck();
+                    });
+            }).catch(error => {
+                console.error('Error getting server port for version check:', error);
+                versionCheckFailures = Math.min(versionCheckFailures + 1, MAX_FAILURES);
+                // Still schedule next check even if port fetch fails
+                scheduleVersionCheck();
+            });
+        }, interval);
+    }
+
+    // Start the periodic version check
+    scheduleVersionCheck();
 }
 
 // Track initialized text replacement elements

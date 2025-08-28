@@ -214,6 +214,86 @@ def on_window_loaded(window):
     # Inject JavaScript
     inject_js(window)
 
+def launch_auto_updater():
+    """Launch the auto-updater with enhanced search and error handling"""
+    import subprocess
+    
+    def show_windows_error_dialog(title, message):
+        """Display a native Windows error dialog using ctypes"""
+        if platform.system() == "Windows" and ctypes:
+            try:
+                MB_ICONERROR = 0x00000010
+                MB_OK = 0x00000000
+                
+                # Create message box
+                result = ctypes.windll.user32.MessageBoxW(
+                    0,  # Handle to owner window
+                    message,  # Message text
+                    title,  # Dialog title
+                    MB_ICONERROR | MB_OK  # Style
+                )
+            except Exception as e:
+                print(f"Failed to show Windows error dialog: {e}")
+        else:
+            print(f"Error: {title} - {message}")
+    
+    def find_updater():
+        """Search for auto-updater executable or Python script in specified locations"""
+        # Define search locations in order of priority
+        search_locations = [
+            os.getcwd(),  # Current working directory
+            os.path.join(os.path.dirname(__file__), 'build'),  # build/ directory
+            os.path.join(os.path.dirname(__file__), 'utils')  # utils/ directory
+        ]
+        
+        # Define possible updater names
+        executable_names = ['auto-updater.exe']
+        script_names = ['auto-updater.py', 'auto_update.py']
+        
+        # Check for executable first
+        for location in search_locations:
+            for name in executable_names:
+                potential_path = os.path.join(location, name)
+                if os.path.exists(potential_path):
+                    return potential_path, 'executable'
+        
+        # If executable not found, check for Python script
+        for location in search_locations:
+            for name in script_names:
+                potential_path = os.path.join(location, name)
+                if os.path.exists(potential_path):
+                    return potential_path, 'script'
+        
+        return None, None
+    
+    try:
+        # Find the updater
+        updater_path, updater_type = find_updater()
+        
+        if updater_path:
+            try:
+                if updater_type == 'executable':
+                    # Launch executable directly
+                    subprocess.Popen([updater_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    _log(f"Launched auto-updater executable: {updater_path}")
+                else:  # script
+                    # Launch Python script with appropriate flags
+                    subprocess.Popen([sys.executable, updater_path, '--auto', '--debug'], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    _log(f"Launched auto-updater script: {updater_path}")
+            except Exception as launch_error:
+                error_msg = f"Failed to launch auto-updater: {launch_error}"
+                _log(error_msg)
+                show_windows_error_dialog("Auto-Updater Launch Error", error_msg)
+        else:
+            error_msg = "Auto-updater not found in any of the expected locations."
+            _log(error_msg)
+            show_windows_error_dialog("Auto-Updater Not Found", error_msg)
+            
+    except Exception as e:
+        error_msg = f"Unexpected error launching auto updater: {e}"
+        _log(error_msg)
+        show_windows_error_dialog("Auto-Updater Error", error_msg)
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
@@ -240,23 +320,7 @@ def main():
     VERBOSE_LOGS = not release_mode
     
     # Launch auto-updater in background
-    try:
-        import subprocess
-        import os
-        # Check for the built auto-updater.exe first, then the source script
-        built_updater_path = os.path.join(os.path.dirname(__file__), 'built', 'auto-updater.exe')
-        source_updater_path = os.path.join(os.path.dirname(__file__), 'utils', 'auto-update.py')
-        
-        if os.path.exists(built_updater_path):
-            subprocess.Popen([built_updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
-        elif os.path.exists(source_updater_path):
-            # Fallback to running the Python script directly if .exe is not found
-            subprocess.Popen([sys.executable, source_updater_path, '--auto'], creationflags=subprocess.CREATE_NEW_CONSOLE)
-        else:
-            print("Auto-updater not found.")
-    except Exception as e:
-        print("Failed to launch auto updater : ", e)
-        pass  # Silently continue if updater fails to launch
+    launch_auto_updater()
     
     # Create window with persistent cookie storage
     window = webview.create_window(
@@ -269,6 +333,60 @@ def main():
     
     # Add event listener for page load
     window.events.loaded += on_window_loaded
+    
+    # Create a local server to serve static files like version.txt
+    import http.server
+    import socketserver
+    import threading
+    import os
+    
+    class FileHandler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=".", **kwargs)
+
+        def end_headers(self):
+            # Add CORS headers to allow access from the webview
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET')
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+            return super().end_headers()
+
+        def do_GET(self):
+            if self.path == '/port':
+                # Return the actual port number
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write(str(self.server.server_address[1]).encode())
+            else:
+                # Handle other requests normally
+                super().do_GET()
+
+    def find_available_port(start_port=8080, max_attempts=100):
+        """Find an available port starting from start_port"""
+        import socket
+        for port in range(start_port, start_port + max_attempts):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    sock.bind(("", port))
+                    return port
+            except OSError:
+                continue
+        raise OSError(f"No available ports found in range {start_port}-{start_port + max_attempts - 1}")
+
+    def start_http_server():
+        # Find an available port starting from 8080
+        try:
+            port = find_available_port(8080)
+            with socketserver.TCPServer(("", port), FileHandler) as httpd:
+                print(f"HTTP server running on port {port}")
+                httpd.serve_forever()
+        except OSError as e:
+            print(f"Failed to start HTTP server: {e}")
+
+    # Start HTTP server in a separate thread
+    server_thread = threading.Thread(target=start_http_server, daemon=True)
+    server_thread.start()
     
     # Start webview with persistent storage
     webview.start(
