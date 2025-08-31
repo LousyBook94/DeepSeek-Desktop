@@ -85,12 +85,13 @@ def test_compare_versions(current, latest, expected):
 @patch('utils.auto_update.requests.get')
 def test_fetch_latest_version_with_retry_success(mock_get, temp_test_dir):
     """Test fetch_latest_version_with_retry successful call."""
+    mock_logger = MagicMock()
     mock_response = MagicMock()
     mock_response.json.return_value = {"tag_name": "v1.0.1"}
     mock_response.raise_for_status.return_value = None
     mock_get.return_value = mock_response
 
-    version, info = fetch_latest_version_with_retry()
+    version, info = fetch_latest_version_with_retry(mock_logger)
     assert version == "1.0.1"
     assert info["tag_name"] == "v1.0.1"
     mock_get.assert_called_once()
@@ -99,9 +100,10 @@ def test_fetch_latest_version_with_retry_success(mock_get, temp_test_dir):
 @patch('utils.auto_update.time.sleep', return_value=None) # Mock sleep to speed up tests
 def test_fetch_latest_version_with_retry_failure(mock_sleep, mock_get, temp_test_dir):
     """Test fetch_latest_version_with_retry after max retries."""
+    mock_logger = MagicMock()
     mock_get.side_effect = Exception("Network error")
 
-    version, info = fetch_latest_version_with_retry()
+    version, info = fetch_latest_version_with_retry(mock_logger)
     assert version is None
     assert info is None
     assert mock_get.call_count == 5 # MAX_RETRIES
