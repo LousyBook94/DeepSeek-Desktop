@@ -379,26 +379,6 @@ def main():
     os.makedirs(TEMP_DIR, exist_ok=True)
     logger.info(f"Temp directory: {TEMP_DIR}")
 
-    # Check if application is running
-    try:
-        subprocess.check_output(
-            f'tasklist /FI "IMAGENAME eq {APP_NAME}" /FO CSV | find "{APP_NAME}"', 
-            shell=True, 
-            stderr=subprocess.DEVNULL
-        )
-        logger.info(f"{APP_NAME} is running. Attempting to close...")
-        subprocess.run(
-            f'taskkill /F /IM "{APP_NAME}"', 
-            shell=True, 
-            check=True, 
-            stdout=subprocess.DEVNULL, 
-            stderr=subprocess.DEVNULL
-        )
-        time.sleep(3)
-        logger.info(f"{APP_NAME} closed.")
-    except subprocess.CalledProcessError:
-        logger.info(f"{APP_NAME} is not running.")
-
     # Get current version
     current_version = get_current_version(script_dir)
     logger.info(f"Current version: {current_version}")
@@ -427,13 +407,33 @@ def main():
     
     if not update_needed:
         console.print(Panel(f"[bold green]You already have the latest version ({current_version})![/bold green]", border_style="green"))
-        app_path = os.path.join(script_dir, APP_NAME)
-        if os.path.exists(app_path):
-            logger.info(f"Starting {APP_NAME}...")
-            subprocess.Popen([app_path])
+        logger.info("Application is up to date. No action needed.")
+        if auto_mode:
+            sys.exit(0)
         return
 
     console.print(Panel(f"[bold yellow]Update available: {current_version} -> {latest_version}[/bold yellow]", border_style="yellow"))
+
+    # Close the running application before updating
+    try:
+        subprocess.check_output(
+            f'tasklist /FI "IMAGENAME eq {APP_NAME}" /FO CSV | find "{APP_NAME}"',
+            shell=True,
+            stderr=subprocess.DEVNULL
+        )
+        logger.info(f"{APP_NAME} is running. Attempting to close...")
+        console.print(f"[yellow]i[/yellow] Closing {APP_NAME} to perform the update...")
+        subprocess.run(
+            f'taskkill /F /IM "{APP_NAME}"',
+            shell=True,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        time.sleep(3)  # Wait for the process to terminate
+        logger.info(f"{APP_NAME} closed.")
+    except subprocess.CalledProcessError:
+        logger.info(f"{APP_NAME} is not running.")
 
     # Find Windows asset
     asset_to_download = None
@@ -535,13 +535,14 @@ def main():
             sys.exit(1)
         return
 
-    # Start application
-    app_path = os.path.join(script_dir, APP_NAME)
-    if os.path.exists(app_path):
-        logger.info(f"Starting {APP_NAME}...")
-        subprocess.Popen([app_path])
-        
-        # Create a completion panel
+    # Start application if in auto mode
+    if auto_mode:
+        app_path = os.path.join(script_dir, APP_NAME)
+        if os.path.exists(app_path):
+            logger.info(f"Auto-mode: Starting {APP_NAME}...")
+            subprocess.Popen([app_path])
+
+    # Create a completion panel
         completion_table = Table(show_header=False, box=box.ROUNDED)
         completion_table.add_column("Info", style="cyan")
         completion_table.add_row("UPDATE COMPLETED SUCCESSFULLY!")
