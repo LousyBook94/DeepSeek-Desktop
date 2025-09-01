@@ -17,10 +17,14 @@ dist/
 
 # Test runner caches
 .pytest_cache/
+.ruff_cache/
 
 # Log files
 *.log
 
 # Environment variables
-.env
-/utils/auto-updater.exe
+.env/
+.venv/
+
+# MD
+/QWEN.md
