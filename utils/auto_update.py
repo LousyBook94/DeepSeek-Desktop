@@ -96,33 +96,46 @@ def setup_logging(script_dir: str) -> logging.Logger:
 def get_current_version(script_dir: str) -> str:
     """Reads the current version from the version.py file bundled with the application."""
     try:
-        # Always read version.py file directly to ensure we get the correct version
-        # even in compiled executables
-        version_path = os.path.join(script_dir, "version.py")
-        if not os.path.exists(version_path):
-            # If not found in script_dir, try to find it in the parent directory
-            # This handles cases where the updater is in a subdirectory
-            version_path = os.path.join(os.path.dirname(script_dir), "version.py")
-
-        if os.path.exists(version_path):
-            # Read the version.py file directly
-            with open(version_path, "r") as f:
-                content = f.read()
-
-            # Extract the version using regex
-            import re
-
-            version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
-            if version_match:
-                return version_match.group(1)
+        # Try to import version module directly
+        # This works for both script and frozen executables
+        import version
+        return version.__version__
+    except ImportError as e:
+        console.print(f"[red]Error importing version module: {e}[/red]")
+        # Fallback: try to read version.py as file
+        try:
+            # For PyInstaller bundled app, files are in _MEIPASS
+            if getattr(sys, 'frozen', False):
+                # Running as compiled executable
+                bundle_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+                version_path = os.path.join(bundle_dir, "version.py")
             else:
-                console.print(
-                    "[red]Error: Could not find __version__ in version.py[/red]"
-                )
-        else:
-            console.print(f"[red]Error: version.py not found at {version_path}[/red]")
-    except Exception as e:
-        console.print(f"[red]Error reading version from version.py: {e}[/red]")
+                # Running as script
+                version_path = os.path.join(script_dir, "version.py")
+                if not os.path.exists(version_path):
+                    # If not found in script_dir, try to find it in the parent directory
+                    # This handles cases where the updater is in a subdirectory
+                    version_path = os.path.join(os.path.dirname(script_dir), "version.py")
+
+            if os.path.exists(version_path):
+                # Read the version.py file directly
+                with open(version_path, "r") as f:
+                    content = f.read()
+
+                # Extract the version using regex
+                import re
+
+                version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+                if version_match:
+                    return version_match.group(1)
+                else:
+                    console.print(
+                        "[red]Error: Could not find __version__ in version.py[/red]"
+                    )
+            else:
+                console.print(f"[red]Error: version.py not found at {version_path}[/red]")
+        except Exception as e:
+            console.print(f"[red]Error reading version from version.py: {e}[/red]")
     return "0.0.0"
 
 

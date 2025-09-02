@@ -190,12 +190,11 @@ function createFooter() {
         if (!footer) {
             footer = document.createElement('div');
             footer.className = 'deepseek-footer';
-            footer.innerHTML = `
-                Made by <a href='https://github.com/LousyBook94' target='_blank' style='opacity: 0.7;'>LousyBook01</a>. 
-                Powered by <a href='https://deepseek.com/' target='_blank' style='opacity: 0.7;'>DeepSeek</a>. 
-                Icons by <a href='https://icons8.com/' target='_blank' style='opacity: 0.7;'>Icons8</a>. 
-                <span class="version-loading">v...</span>
-            `;
+            footer.innerHTML = '' +
+                'Made by <a href=\'https://github.com/LousyBook94\' target=\'_blank\' style=\'opacity: 0.7;\'>LousyBook01</a>. ' +
+                'Powered by <a href=\'https://deepseek.com/\' target=\'_blank\' style=\'opacity: 0.7;\'>DeepSeek</a>. ' +
+                'Icons by <a href=\'https://icons8.com/\' target=\'_blank\' style=\'opacity: 0.7;\'>Icons8</a>. ' +
+                '<span class="version-loading">v...</span>';
             footer.style.position = 'fixed';
             footer.style.bottom = '10px';
             footer.style.right = '10px';
@@ -294,7 +293,7 @@ function updateFooterVersion(version) {
             fragment.appendChild(document.createTextNode('Icons by '));
             fragment.appendChild(iconsByLink);
             fragment.appendChild(document.createTextNode(' • '));
-            fragment.appendChild(document.createTextNode(`v${version}`)); // This will be replaced by Python code
+            fragment.appendChild(document.createTextNode('v' + version)); // This will be replaced by Python code
             
             // Clear existing content and add the new fragment
             footer.innerHTML = '';

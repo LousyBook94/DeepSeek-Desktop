@@ -37,15 +37,26 @@ def build_app(fresh=False):
         temp_data_dir = None
         if os.path.exists(data_dir):
             temp_data_dir = os.path.join(temp_dir, "data_temp")
-            shutil.move(data_dir, temp_data_dir)
+            try:
+                if os.path.exists(temp_data_dir):
+                    shutil.rmtree(temp_data_dir, ignore_errors=True)
+                shutil.copytree(data_dir, temp_data_dir)
+                # Try to remove the original data directory
+                shutil.rmtree(data_dir, ignore_errors=True)
+            except Exception as e:
+                print(f"Warning: Could not preserve data directory: {e}")
+                temp_data_dir = None
 
         # Remove the dist directory
         shutil.rmtree(dist_dir, ignore_errors=True)
 
         # Restore the data directory
         if temp_data_dir and os.path.exists(temp_data_dir):
-            os.makedirs(dist_dir, exist_ok=True)
-            shutil.move(temp_data_dir, data_dir)
+            try:
+                os.makedirs(dist_dir, exist_ok=True)
+                shutil.copytree(temp_data_dir, data_dir)
+            except Exception as e:
+                print(f"Warning: Could not restore data directory: {e}")
 
     # Remove other temporary directories
     shutil.rmtree(temp_dir, ignore_errors=True)
