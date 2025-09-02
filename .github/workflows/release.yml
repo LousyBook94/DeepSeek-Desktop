@@ -3,14 +3,12 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1.61"
+  VERSION: "0.1.62"
   RELEASE_BODY: |
-    🚀 V__VERSION__ released with a new updater, and new UI ✨
+    🚀 V__VERSION__ released with a fixed updater (probably) ✨
     
     ### What's new
-    - Fixed updater @vanja-san #13
-    - Some new UI elements
-    - Better updater workflow
+    - Fixed updater @vanja-san #18
 
 jobs:
   build-and-release:

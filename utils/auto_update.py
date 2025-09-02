@@ -379,25 +379,9 @@ def main():
     os.makedirs(TEMP_DIR, exist_ok=True)
     logger.info(f"Temp directory: {TEMP_DIR}")
 
-    # Check if application is running
-    try:
-        subprocess.check_output(
-            f'tasklist /FI "IMAGENAME eq {APP_NAME}" /FO CSV | find "{APP_NAME}"', 
-            shell=True, 
-            stderr=subprocess.DEVNULL
-        )
-        logger.info(f"{APP_NAME} is running. Attempting to close...")
-        subprocess.run(
-            f'taskkill /F /IM "{APP_NAME}"', 
-            shell=True, 
-            check=True, 
-            stdout=subprocess.DEVNULL, 
-            stderr=subprocess.DEVNULL
-        )
-        time.sleep(3)
-        logger.info(f"{APP_NAME} closed.")
-    except subprocess.CalledProcessError:
-        logger.info(f"{APP_NAME} is not running.")
+    # Check if application is running (only if update is needed)
+    # This check will be performed after we confirm an update is needed
+    pass
 
     # Get current version
     current_version = get_current_version(script_dir)
@@ -425,14 +409,33 @@ def main():
     version_table.add_row(current_version, latest_version)
     console.print(Panel(version_table, title="Version Information", border_style="blue"))
     
+    # Only proceed with update process if an update is actually needed
     if not update_needed:
         console.print(Panel(f"[bold green]You already have the latest version ({current_version})![/bold green]", border_style="green"))
-        app_path = os.path.join(script_dir, APP_NAME)
-        if os.path.exists(app_path):
-            logger.info(f"Starting {APP_NAME}...")
-            subprocess.Popen([app_path])
+        # Exit without restarting DeepSeekChat.exe to prevent spamming
+        logger.info("No update needed. Exiting without restarting application.")
         return
 
+    # Check if application is running and close it if needed (only when update is needed)
+    try:
+        subprocess.check_output(
+            f'tasklist /FI "IMAGENAME eq {APP_NAME}" /FO CSV | find "{APP_NAME}"',
+            shell=True,
+            stderr=subprocess.DEVNULL
+        )
+        logger.info(f"{APP_NAME} is running. Attempting to close...")
+        subprocess.run(
+            f'taskkill /F /IM "{APP_NAME}"',
+            shell=True,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        time.sleep(3)
+        logger.info(f"{APP_NAME} closed.")
+    except subprocess.CalledProcessError:
+        logger.info(f"{APP_NAME} is not running.")
+    
     console.print(Panel(f"[bold yellow]Update available: {current_version} -> {latest_version}[/bold yellow]", border_style="yellow"))
 
     # Find Windows asset
