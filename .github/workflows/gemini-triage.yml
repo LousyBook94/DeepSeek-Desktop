@@ -125,6 +125,8 @@ jobs:
                 echo "SELECTED_LABELS=bug,enhancement" >> "/tmp/runner/env"
                 ```
 
+            IMPORTANT: If the info of the issue seems sufficient for implementation, add the label "jules" exactly to make an agent begin implementing the fix.
+
   label:
     runs-on: 'ubuntu-latest'
     needs:
