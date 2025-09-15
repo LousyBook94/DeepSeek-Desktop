@@ -1,78 +1,114 @@
-# DeepSeek Desktop 🚀
-- This project is still in development with more features coming soon
-- Please report any bugs or suggestions in [issues](https://github.com/LousyBook94/DeepSeek-Desktop/issues)
+## 🚀 DeepSeek Desktop
+
+> Your ultimate desktop companion for DeepSeek Chat — now smoother, prettier, and packed with magic ✨
+
+**⚠️ Note:** This project is still under active development. Expect more crazy features soon!
+Bugs or suggestions? Drop them in [issues](https://github.com/LousyBook94/DeepSeek-Desktop/issues) 💀🔥
 
 ![DeepSeek Desktop Preview](assets/preview.png)
 
-## Installation
-1. Visit the [Releases page](https://github.com/LousyBook94/DeepSeek-Desktop/releases)
-2. Download the `DeepSeekChat-windows.zip` file
-3. Extract the zip file
+---
+
+## 💾 Installation
+
+1. Head to the [Releases page](https://github.com/LousyBook94/DeepSeek-Desktop/releases)
+2. Download `DeepSeekChat-windows.zip`
+3. Extract the files
 4. Run `DeepSeekChat.exe`
-5. Run `auto-update.bat` to update the app
+5. Run `auto-update.bat` to keep your app fresh 🚀
 
-## Features ✨
-This desktop application enhances your DeepSeek chat experience with:
+---
 
-- 🎨 **Custom UI Elements**:
-  - Custom footer text
-  - Forced "Inter" font throughout the interface
-- ⏰ **Dynamic Greetings**:
-  - Time-based messages (Good Morning/Afternoon/Evening)
-  - Smooth fade transitions between messages
-- ✨ **Animations**:
-  - Typing animation with sphere cursor
-  - Self-healing UI components via MutationObservers
-- 🧹 **Clean Interface**:
-  - Removed unnecessary UI elements
-  - Persistent styling across navigation
-- 🌙 **Dark Titlebar Support**:
-  - Automatically matches Windows system theme
-  - Manual override options available
-- 🔃 **Auto Updater**
-- 🔄 **Real-time Synchronization**:
-  - Beautiful frosted glass refresh button with auto-hide functionality
-  - URL path preservation on refresh to maintain navigation state
-  - Loading indicators and refresh popup with smooth animations
-  - Welcome tooltip for user guidance on first interaction
-- 📝 **Enhanced Markdown Rendering**
-  - Full markdown content rendering in user messages
-  - System theme detection for code blocks (light/dark mode)
-  - JetBrains Mono font for improved code readability
-  - Security sanitization with DOMPurify to prevent XSS attacks
-  - Fixed spacing issues after headings and other elements
-  - Proper handling for code blocks and inline code elements
+## ✨ Features
 
-## Advanced Usage 🔧
-For advanced users, you can customize the application behavior:
+**DeepSeek Desktop** comes loaded with enhancements to make your chat experience 💯:
+
+* 🎨 **Custom UI Elements**
+
+  * Custom footer text
+  * Forced **Inter font** throughout
+
+* ⏰ **Dynamic Greetings**
+
+  * Good Morning/Afternoon/Evening messages
+  * Smooth fade transitions
+
+* ✨ **Animations**
+
+  * Typing animation with sphere cursor
+  * Self-healing UI via MutationObservers
+
+* 🧹 **Clean Interface**
+
+  * Removed cluttered UI elements
+  * Persistent styling across navigation
+
+* 🌙 **Dark Titlebar Support**
+
+  * Matches your Windows system theme automatically
+  * Manual override available
+
+* 🔃 **Auto Updater**
+
+* 🔄 **Real-time Sync & Navigation**
+
+  * Frosted glass refresh button with auto-hide
+  * URL path preserved on refresh
+  * Smooth loading indicators & popups
+  * Welcome tooltip for first-time guidance
+
+* 📝 **Enhanced Markdown Rendering**
+
+  * Full markdown support in messages
+  * System theme detection for code blocks
+  * JetBrains Mono for code readability
+  * XSS protection via DOMPurify
+  * Proper spacing & inline code handling
+
+---
+
+## 🔧 Advanced Usage
 
 ```bash
-# Force dark titlebar regardless of system theme
+# Force dark titlebar
 DeepSeekChat.exe --dark-titlebar
 
-# Force light titlebar regardless of system theme
+# Force light titlebar
 DeepSeekChat.exe --light-titlebar
 
 # Run in release mode (disable debug tools)
 DeepSeekChat.exe --release
 ```
 
-The titlebar will automatically match your Windows system theme by default. If you have Windows set to dark mode, the titlebar will be dark. If you have Windows set to light mode, the titlebar will be light.
+By default, the titlebar **matches your Windows theme** automatically 🌙☀️
 
-## Future Plans 🔮
-- [x] ~~Dark titlebar support~~ ✅ **Completed!**
-- [ ] Custom theme support for the entire interface
-- [ ] Keyboard shortcuts
-- [ ] Cross-platform builds (Mac/Linux)
-- [ ] System tray integration
+---
 
-## Connect with Me 👋
-- [YouTube](https://youtube.com/@LousyBook01)
-- [GitHub](https://github.com/LousyBook94)
+## 🔮 Future Plans
 
-## Cool Guys
-- [vanja-san](https://github.com/vanja-san)
+* [x] Dark titlebar ✅
+* [ ] Custom themes
+* [ ] Keyboard shortcuts
+* [ ] Cross-platform builds (Mac/Linux)
+* [ ] System tray integration
 
-## Attribution
-- Icons by [Icons8](https://icons8.com)
-- Powered by [DeepSeek](https://deepseek.com)
+---
+
+## 👋 Connect with Me
+
+* [YouTube](https://youtube.com/@LousyBook01)
+* [GitHub](https://github.com/LousyBook94)
+
+---
+
+## 🤘 Cool Contributors
+
+* [vanja-san](https://github.com/vanja-san)
+
+---
+
+## ⚡ Attribution
+
+* Icons by [Icons8](https://icons8.com)
+* Powered by [DeepSeek](https://deepseek.com)
+
