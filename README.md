@@ -147,6 +147,13 @@ By default, the titlebar **matches your Windows theme** automatically 🌙☀️
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/github-actions[bot]">
+                    <img src="https://avatars.githubusercontent.com/in/15368?v=4" width="100;" alt="github-actions[bot]"/>
+                    <br />
+                    <sub><b>github-actions[bot]</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/google-labs-jules[bot]">
                     <img src="https://avatars.githubusercontent.com/in/842251?v=4" width="100;" alt="google-labs-jules[bot]"/>
                     <br />
