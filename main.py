@@ -213,86 +213,69 @@ def on_window_loaded(window):
     apply_dark_titlebar_delayed(window)
     # Inject JavaScript
     inject_js(window)
+    # Start update check in a background thread
+    update_check_thread = threading.Thread(target=check_for_updates_background, args=(window,), daemon=True)
+    update_check_thread.start()
 
-def launch_auto_updater():
-    """Launch the auto-updater with enhanced search and error handling"""
-    import subprocess
-    
-    def show_windows_error_dialog(title, message):
-        """Display a native Windows error dialog using ctypes"""
-        if platform.system() == "Windows" and ctypes:
-            try:
-                MB_ICONERROR = 0x00000010
-                MB_OK = 0x00000000
-                
-                # Create message box
-                result = ctypes.windll.user32.MessageBoxW(
-                    0,  # Handle to owner window
-                    message,  # Message text
-                    title,  # Dialog title
-                    MB_ICONERROR | MB_OK  # Style
-                )
-            except Exception as e:
-                print(f"Failed to show Windows error dialog: {e}")
-        else:
-            print(f"Error: {title} - {message}")
-    
-    def find_updater():
-        """Search for auto-updater executable or Python script in specified locations"""
-        # Define search locations in order of priority
-        search_locations = [
-            os.getcwd(),  # Current working directory
-            os.path.join(os.path.dirname(__file__), 'build'),  # build/ directory
-            os.path.join(os.path.dirname(__file__), 'utils')  # utils/ directory
-        ]
+from utils import updater
+import threading
+
+# Global variable to store update info
+update_info = {}
+
+class Api:
+    def __init__(self, window):
+        self.window = window
+
+    def start_update(self):
+        _log("User requested to start update.")
         
-        # Define possible updater names
-        executable_names = ['auto-updater.exe']
-        script_names = ['auto-updater.py', 'auto_update.py']
-        
-        # Check for executable first
-        for location in search_locations:
-            for name in executable_names:
-                potential_path = os.path.join(location, name)
-                if os.path.exists(potential_path):
-                    return potential_path, 'executable'
-        
-        # If executable not found, check for Python script
-        for location in search_locations:
-            for name in script_names:
-                potential_path = os.path.join(location, name)
-                if os.path.exists(potential_path):
-                    return potential_path, 'script'
-        
-        return None, None
-    
-    try:
-        # Find the updater
-        updater_path, updater_type = find_updater()
-        
-        if updater_path:
-            try:
-                if updater_type == 'executable':
-                    # Launch executable directly
-                    subprocess.Popen([updater_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
-                    _log(f"Launched auto-updater executable: {updater_path}")
-                else:  # script
-                    # Launch Python script with appropriate flags
-                    subprocess.Popen([sys.executable, updater_path, '--auto', '--debug'], creationflags=subprocess.CREATE_NEW_CONSOLE)
-                    _log(f"Launched auto-updater script: {updater_path}")
-            except Exception as launch_error:
-                error_msg = f"Failed to launch auto-updater: {launch_error}"
-                _log(error_msg)
-                show_windows_error_dialog("Auto-Updater Launch Error", error_msg)
-        else:
-            error_msg = "Auto-updater not found in any of the expected locations."
-            _log(error_msg)
-            show_windows_error_dialog("Auto-Updater Not Found", error_msg)
-            
-    except Exception as e:
-        error_msg = f"Unexpected error launching auto updater: {e}"
-        _log(error_msg)
-        show_windows_error_dialog("Auto-Updater Error", error_msg)
+        def update_progress(progress):
+            self.window.evaluate_js(f"showUpdateProgress({progress})")
+
+        def run_update():
+            release_info = update_info.get("release_info")
+            if not release_info:
+                _log("Update failed: release_info not found.")
+                self.window.evaluate_js("showUpdateError('Failed to get release information.')")
+                return
+
+            # Show progress popup
+            self.window.evaluate_js("showUpdateProgress(0)")
+
+            # Download
+            zip_path, error = updater.download_update(release_info, progress_callback=update_progress)
+            if error:
+                _log(f"Update failed during download: {error}")
+                self.window.evaluate_js(f"showUpdateError('Download failed: {error}')")
+                return
+
+            # Install
+            self.window.evaluate_js("showUpdateProgress('installing')")
+            success, message = updater.install_update(zip_path, update_info.get("latest_version"))
+            if not success:
+                _log(f"Update failed during installation: {message}")
+                self.window.evaluate_js(f"showUpdateError('Installation failed: {message}')")
+
+        # Run the update in a separate thread to avoid blocking the UI
+        update_thread = threading.Thread(target=run_update, daemon=True)
+        update_thread.start()
+
+
+def check_for_updates_background(window):
+    """Check for updates in a background thread."""
+    _log("Checking for updates in the background...")
+    global update_info
+    update_info = updater.check_for_updates()
+    _log(f"Update info: {update_info}")
+
+    if update_info.get("update_needed"):
+        _log(f"Update available: {update_info['current_version']} -> {update_info['latest_version']}")
+        window.evaluate_js(f"showUpdatePopup('{update_info['current_version']}', '{update_info['latest_version']}')")
+    elif update_info.get("error"):
+        _log(f"Update check failed: {update_info['error']}")
+    else:
+        _log("No update needed.")
 
 def main():
     # Parse command line arguments
@@ -318,26 +301,25 @@ def main():
     # Gate verbose logs in release mode
     global VERBOSE_LOGS
     VERBOSE_LOGS = not release_mode
-    
-    # Launch auto-updater in background
-    launch_auto_updater()
-    
+
     # Create window with persistent cookie storage
+    api = Api(None) # Initialized with None, will be set later
     window = webview.create_window(
         APP_TITLE,
         "https://chat.deepseek.com",
         width=1200,
         height=800,
-        text_select=True # Enable selecting text (#2 vanja-san)
+        text_select=True, # Enable selecting text (#2 vanja-san)
+        js_api=api
     )
-    
+    api.window = window # Set the window object for the api
+
     # Add event listener for page load
     window.events.loaded += on_window_loaded
-    
+
     # Create a local server to serve static files like version.txt
     import http.server
     import socketserver
-    import threading
     import os
     
     class FileHandler(http.server.SimpleHTTPRequestHandler):

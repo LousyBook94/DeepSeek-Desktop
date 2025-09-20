@@ -1580,3 +1580,164 @@ const observer = new MutationObserver((mutationsList) => {
 
 // Start observing the document body for changes
 observer.observe(document.body, { childList: true, subtree: true });
+
+function showUpdatePopup(current_version, latest_version) {
+    const updatePopup = document.createElement('div');
+    updatePopup.id = 'deepseek-update-popup';
+    updatePopup.innerHTML = `
+        <div class="popup-content">
+            <h3 class="popup-title">Update Available</h3>
+            <p class="popup-text">A new version (${latest_version}) is available. You are using version ${current_version}.</p>
+            <div class="popup-buttons">
+                <button id="update-now-btn">Update Now</button>
+                <button id="update-later-btn">Later</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(updatePopup);
+
+    const style = document.createElement('style');
+    style.textContent = `
+        #deepseek-update-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10002;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px 40px;
+            border-radius: 16px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 320px;
+        }
+        #deepseek-update-popup .popup-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        #deepseek-update-popup button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #update-now-btn {
+            background-color: #667eea;
+            color: white;
+        }
+        #update-later-btn {
+            background-color: #4a5568;
+            color: white;
+        }
+    `;
+    document.head.appendChild(style);
+
+    document.getElementById('update-now-btn').addEventListener('click', () => {
+        pywebview.api.start_update();
+        updatePopup.remove();
+    });
+
+    document.getElementById('update-later-btn').addEventListener('click', () => {
+        updatePopup.remove();
+    });
+}
+
+function showUpdateProgress(progress) {
+    let progressPopup = document.getElementById('deepseek-progress-popup');
+    if (!progressPopup) {
+        progressPopup = document.createElement('div');
+        progressPopup.id = 'deepseek-progress-popup';
+        progressPopup.innerHTML = `
+            <div class="popup-content">
+                <h3 class="popup-title">Updating...</h3>
+                <p class="popup-text" id="progress-text">Downloading...</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(progressPopup);
+        const style = document.createElement('style');
+        style.textContent = `
+            #deepseek-progress-popup {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 10002;
+                background: rgba(15, 23, 42, 0.95);
+                backdrop-filter: blur(20px);
+                padding: 30px 40px;
+                border-radius: 16px;
+                color: white;
+                text-align: center;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                min-width: 320px;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+
+    if (progress === 'installing') {
+        progressText.textContent = 'Installing...';
+        progressFill.style.width = '100%';
+    } else {
+        progressText.textContent = 'Downloading...';
+        progressFill.style.width = progress + '%';
+    }
+}
+
+function showUpdateError(message) {
+    let errorPopup = document.getElementById('deepseek-error-popup');
+    if (errorPopup) {
+        errorPopup.remove();
+    }
+
+    errorPopup = document.createElement('div');
+    errorPopup.id = 'deepseek-error-popup';
+    errorPopup.innerHTML = `
+        <div class="popup-content">
+            <h3 class="popup-title">Update Failed</h3>
+            <p class="popup-text">${message}</p>
+            <div class="popup-buttons">
+                <button id="error-ok-btn">OK</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(errorPopup);
+
+    const style = document.createElement('style');
+    style.textContent = `
+        #deepseek-error-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10002;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px 40px;
+            border-radius: 16px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 320px;
+        }
+    `;
+    document.head.appendChild(style);
+
+    document.getElementById('error-ok-btn').addEventListener('click', () => {
+        errorPopup.remove();
+    });
+}
