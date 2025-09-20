@@ -74,6 +74,34 @@ function createRefreshButton() {
         </div>
     `;
     
+    // Create update notification popup
+    const updatePopup = document.createElement('div');
+    updatePopup.id = 'deepseek-update-popup';
+    updatePopup.innerHTML = `
+        <div class="update-icon-container">
+            <div class="update-icon">🔄</div>
+        </div>
+        <div class="popup-content">
+            <h3 class="popup-title">Update Available</h3>
+            <p class="popup-text">A new version is available for download.</p>
+            <div class="version-info">
+                <p>Current: <span id="current-version">0.0.0</span></p>
+                <p>Latest: <span id="latest-version">0.0.0</span></p>
+            </div>
+            <div class="update-actions">
+                <button id="update-now-btn" class="update-btn primary">Update Now</button>
+                <button id="update-later-btn" class="update-btn secondary">Later</button>
+                <button id="skip-version-btn" class="update-btn tertiary">Skip This Version</button>
+            </div>
+            <div class="update-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p class="progress-text">Downloading...</p>
+            </div>
+        </div>
+    `;
+    
     // Apply beautiful styling
     const style = document.createElement('style');
     style.textContent = `
@@ -428,6 +456,215 @@ function createRefreshButton() {
                 top: 0;
             }
         }
+        
+        #deepseek-update-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10002;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px 40px;
+            border-radius: 16px;
+            color: white;
+            text-align: center;
+            display: none;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 320px;
+            max-width: 400px;
+        }
+        
+        #deepseek-update-popup.show {
+            display: block;
+            animation: fadeInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .update-icon-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+        }
+        
+        .update-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .update-popup .popup-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .update-popup .popup-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            color: #667eea;
+            letter-spacing: 0.5px;
+        }
+        
+        .update-popup .popup-text {
+            font-size: 14px;
+            font-weight: 400;
+            margin: 0 0 20px 0;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+        
+        .version-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .version-info p {
+            margin: 4px 0;
+            font-size: 13px;
+        }
+        
+        .version-info span {
+            font-weight: 600;
+            color: #764ba2;
+        }
+        
+        .update-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .update-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .update-btn.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .update-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .update-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .update-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .update-btn.tertiary {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .update-btn.tertiary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .update-progress {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .update-progress .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .update-progress .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .update-progress .progress-text {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0;
+        }
+        
+        body.dark-mode #deepseek-update-popup {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        body.dark-mode #deepseek-update-popup .update-icon {
+            color: #333;
+        }
+        
+        body.dark-mode #deepseek-update-popup .popup-title {
+            color: #5a67d8;
+        }
+        
+        body.dark-mode .version-info {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        body.dark-mode .version-info span {
+            color: #5a67d8;
+        }
+        
+        body.dark-mode .update-btn.secondary {
+            background: rgba(0, 0, 0, 0.1);
+            border-color: rgba(0, 0, 0, 0.2);
+            color: #333;
+        }
+        
+        body.dark-mode .update-btn.secondary:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        body.dark-mode .update-btn.tertiary {
+            color: rgba(0, 0, 0, 0.6);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        body.dark-mode .update-btn.tertiary:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+        
+        body.dark-mode .update-progress .progress-bar {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        body.dark-mode .update-progress .progress-text {
+            color: rgba(0, 0, 0, 0.7);
+        }
     `;
     
     // Add styles to head
@@ -439,6 +676,7 @@ function createRefreshButton() {
     document.body.appendChild(refreshPopup);
     document.body.appendChild(welcomeTooltip);
     document.body.appendChild(versionTooltip);
+    document.body.appendChild(updatePopup);
     
     // Create loading indicator
     const loadingIndicator = document.createElement('div');
@@ -504,6 +742,106 @@ function createRefreshButton() {
     
     // Load version immediately
     loadVersion();
+    
+    // Check for updates periodically
+    let updateCheckInterval;
+    let lastVersionCheck = 0;
+    const VERSION_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+    
+    function checkForUpdates() {
+        const now = Date.now();
+        if (now - lastVersionCheck < VERSION_CHECK_INTERVAL) {
+            return; // Too soon since last check
+        }
+        
+        lastVersionCheck = now;
+        getServerPort().then(port => {
+            fetch(`http://localhost:${port}/version.txt`)
+                .then(response => response.text())
+                .then(latestVersion => {
+                    const currentVersion = localStorage.getItem('deepseek-version') || '0.0.0';
+                    if (currentVersion !== latestVersion) {
+                        showUpdateNotification(currentVersion, latestVersion);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking for updates:', error);
+                });
+        });
+    }
+    
+    function showUpdateNotification(currentVersion, latestVersion) {
+        document.getElementById('current-version').textContent = currentVersion;
+        document.getElementById('latest-version').textContent = latestVersion;
+        updatePopup.classList.add('show');
+        
+        // Auto-hide after 30 seconds if user doesn't interact
+        setTimeout(() => {
+            if (updatePopup.classList.contains('show')) {
+                updatePopup.classList.remove('show');
+            }
+        }, 30000);
+    }
+    
+    function hideUpdateNotification() {
+        updatePopup.classList.remove('show');
+    }
+    
+    function startUpdateProcess() {
+        hideUpdateNotification();
+        
+        // Show progress
+        const progressSection = updatePopup.querySelector('.update-progress');
+        const actionsSection = updatePopup.querySelector('.update-actions');
+        progressSection.style.display = 'block';
+        actionsSection.style.display = 'none';
+        
+        // Simulate progress (in real implementation, this would communicate with the backend)
+        let progress = 0;
+        const progressFill = progressSection.querySelector('.progress-fill');
+        const progressText = progressSection.querySelector('.progress-text');
+        
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 20;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(progressInterval);
+                progressText.textContent = 'Update complete! Restarting...';
+                
+                // Notify the desktop app to restart
+                const updateEvent = new CustomEvent('deepseekUpdate', {
+                    detail: { action: 'restart' }
+                });
+                document.dispatchEvent(updateEvent);
+                
+                // Hide popup after a delay
+                setTimeout(() => {
+                    updatePopup.classList.remove('show');
+                }, 2000);
+            } else {
+                progressFill.style.width = progress + '%';
+                if (progress < 50) {
+                    progressText.textContent = 'Downloading...';
+                } else if (progress < 90) {
+                    progressText.textContent = 'Installing...';
+                } else {
+                    progressText.textContent = 'Finalizing...';
+                }
+            }
+        }, 500);
+    }
+    
+    // Add event listeners for update popup
+    document.getElementById('update-now-btn').addEventListener('click', startUpdateProcess);
+    document.getElementById('update-later-btn').addEventListener('click', hideUpdateNotification);
+    document.getElementById('skip-version-btn').addEventListener('click', () => {
+        const currentVersion = localStorage.getItem('deepseek-version') || '0.0.0';
+        localStorage.setItem('deepseek-skip-version', currentVersion);
+        hideUpdateNotification();
+    });
+    
+    // Start update checking
+    updateCheckInterval = setInterval(checkForUpdates, 60 * 60 * 1000); // Check every hour
     
     // Show welcome tooltip on page load
     setTimeout(() => {
