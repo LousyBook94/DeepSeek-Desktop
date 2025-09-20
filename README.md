@@ -103,8 +103,13 @@ By default, the titlebar **matches your Windows theme** automatically 🌙☀️
 
 ## 🤘 Cool Contributors
 
-* [vanja-san](https://github.com/vanja-san) <- Some updater fixes, and many suggestions
-* [dwip-the-dev](https://github.com/dwip-the-dev) <- README updatess :]
+<!-- readme: collaborators,contributors -start -->
+<!-- readme: collaborators,contributors -end -->
+
+## 🔧Bots that help the project
+
+<!-- readme: bots -start -->
+<!-- readme: bots -end -->
 
 ---
 
