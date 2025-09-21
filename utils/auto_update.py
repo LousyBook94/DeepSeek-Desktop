@@ -41,7 +41,10 @@ def get_script_directory():
 console = Console()
 
 class AutoUpdater:
-    """Auto-updater class for DeepSeek Desktop with callback support"""
++APP_NAME = "DeepSeek-Desktop.exe"
++
+ class AutoUpdater:
+     """Auto-updater class for DeepSeek Desktop with callback support"""
     
     def __init__(self, script_dir=None, callback=None):
         self.script_dir = script_dir or get_script_directory()
