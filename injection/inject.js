@@ -745,7 +745,18 @@ function createRefreshButton() {
     
     // Check for updates periodically
     let updateCheckInterval;
+    const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+    const UPDATE_PROMPT_TIMEOUT = 30000; // 30 seconds
+
+    // Check for updates periodically
+    let updateCheckInterval;
     let lastVersionCheck = 0;
+    
+    function checkForUpdates() {
+        const now = Date.now();
+        if (now - lastVersionCheck < UPDATE_CHECK_INTERVAL) {
+            return; // Too soon since last check
+        }
     const VERSION_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
     
     function checkForUpdates() {
