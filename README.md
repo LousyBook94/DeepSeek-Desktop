@@ -1,6 +1,9 @@
 ## 🚀 DeepSeek Desktop
 
-[![CI](https://github.com/LousyBook94/DeepSeek-Desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/LousyBook94/DeepSeek-Desktop/actions/workflows/ci.yml)
+![CI](https://img.shields.io/github/actions/workflow/status/LousyBook94/DeepSeek-Desktop/ci.yml?style=flat&label=CI)
+![Version](https://img.shields.io/github/v/release/LousyBook94/DeepSeek-Desktop?style=flat&color=blue)
+![Language](https://img.shields.io/github/languages/top/LousyBook94/DeepSeek-Desktop?style=flat&color=yellow)
+![License](https://img.shields.io/github/license/LousyBook94/DeepSeek-Desktop?style=flat&color=green)
 
 > Your ultimate desktop companion for DeepSeek Chat — now smoother, prettier, and packed with magic ✨
 
