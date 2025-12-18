@@ -3,7 +3,9 @@
 > Your ultimate desktop companion for DeepSeek Chat — now smoother, prettier, and packed with magic ✨
 
 **⚠️ Note:** This project is still under active development. Expect more crazy features soon!
-Bugs or suggestions? Drop them in [issues](https://github.com/LousyBook94/DeepSeek-Desktop/issues) 💀🔥
+> Sorry i've been away for a while, but now i'm back working on the project, did some epic improvements and fixed old bugs!
+
+> Bugs or suggestions? Drop them in [issues](https://github.com/LousyBook94/DeepSeek-Desktop/issues) 💀🔥
 
 ![DeepSeek Desktop Preview](assets/preview.png)
 
@@ -65,6 +67,10 @@ Bugs or suggestions? Drop them in [issues](https://github.com/LousyBook94/DeepSe
   * XSS protection via DOMPurify
   * Proper spacing & inline code handling
 
+* 📸 **Developer Tools**
+  * **Ctrl+Shift+S**: Instantly capture a screenshot of the window (Development mode only)
+  * Screensots are automatically saved to the `assets/` folder with timestamps
+
 ---
 
 ## 🔧 Advanced Usage
@@ -78,6 +84,9 @@ DeepSeekChat.exe --light-titlebar
 
 # Run in release mode (disable debug tools)
 DeepSeekChat.exe --release
+
+# Take a screenshot (Development mode only)
+# Press Ctrl + Shift + S
 ```
 
 By default, the titlebar **matches your Windows theme** automatically 🌙☀️
@@ -88,7 +97,7 @@ By default, the titlebar **matches your Windows theme** automatically 🌙☀️
 
 * [x] Dark titlebar ✅
 * [ ] Custom themes
-* [ ] Keyboard shortcuts
+* [x] Keyboard shortcuts (Screenshot: Ctrl+Shift+S) ✅
 * [ ] Cross-platform builds (Mac/Linux)
 * [ ] System tray integration
 

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python main.py --help)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

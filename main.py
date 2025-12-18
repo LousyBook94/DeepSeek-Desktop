@@ -3,6 +3,20 @@ import os
 import argparse
 import sys
 import platform
+import datetime
+import base64
+import io
+
+# For native Windows screenshots
+if platform.system() == "Windows":
+    try:
+        import clr
+        clr.AddReference('System.Drawing')
+        clr.AddReference('System.Windows.Forms')
+        from System.Drawing import Bitmap, Graphics, Imaging, Point, Size
+        from System.Drawing.Imaging import ImageFormat
+    except ImportError:
+        clr = None
 
 APP_TITLE = "DeepSeek - Into the Unknown"
 
@@ -211,8 +225,96 @@ def on_window_loaded(window):
     """Called when window is loaded"""
     # Apply dark titlebar with delay to ensure window is fully created
     apply_dark_titlebar_delayed(window)
-    # Inject JavaScript
+    # Inject original JavaScript
     inject_js(window)
+    
+    # Inject screenshot hotkey only in development (unfrozen) mode
+    is_frozen = getattr(sys, 'frozen', False)
+    if not is_frozen:
+        hotkey_js = """
+        console.log("DeepSeek: Screenshot hotkey active (Ctrl+Shift+S)");
+        window.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+                e.preventDefault();
+                console.log("Screenshot hotkey triggered (Native)");
+                if (window.pywebview && window.pywebview.api) {
+                    window.pywebview.api.take_screenshot().then(function(response) {
+                        console.log("Screenshot response:", response);
+                    });
+                }
+            }
+        });
+        """
+        window.evaluate_js(hotkey_js)
+
+class API:
+    def __init__(self):
+        self._window = None
+
+    def take_screenshot(self):
+        """Take a native screenshot of the window on Windows"""
+        if not self._window:
+            _log("API Error: Window not initialized")
+            return {"status": "error", "message": "Window not initialized"}
+            
+        if platform.system() != "Windows" or not ctypes:
+            return {"status": "error", "message": "Native screenshot only supported on Windows"}
+
+        try:
+            # Find the window handle
+            hwnd = None
+            if hasattr(self._window, 'hwnd'):
+                hwnd = self._window.hwnd
+            elif hasattr(self._window, '_window') and hasattr(self._window._window, 'hwnd'):
+                hwnd = self._window._window.hwnd
+            
+            if not hwnd:
+                hwnd = find_window_handle(APP_TITLE)
+                
+            if not hwnd:
+                return {"status": "error", "message": "Could not find window handle"}
+
+            # Get client area dimensions (the actual content area)
+            client_rect = wintypes.RECT()
+            ctypes.windll.user32.GetClientRect(hwnd, ctypes.byref(client_rect))
+            
+            width = client_rect.right - client_rect.left
+            height = client_rect.bottom - client_rect.top
+            
+            if width <= 0 or height <= 0:
+                return {"status": "error", "message": "Invalid window dimensions"}
+
+            # Get the screen position of the top-left corner of the client area
+            point = wintypes.POINT(0, 0)
+            ctypes.windll.user32.ClientToScreen(hwnd, ctypes.byref(point))
+
+            # Capture using System.Drawing
+            bmp = Bitmap(width, height)
+            g = Graphics.FromImage(bmp)
+            g.CopyFromScreen(Point(point.x, point.y), Point(0, 0), Size(width, height))
+            
+            # Ensure assets directory exists
+            assets_dir = os.path.join(os.getcwd(), 'assets')
+            if not os.path.exists(assets_dir):
+                os.makedirs(assets_dir)
+            
+            # Generate filename with timestamp
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"screenshot_{timestamp}.png"
+            filepath = os.path.join(assets_dir, filename)
+            
+            # Save the image
+            bmp.Save(filepath, ImageFormat.Png)
+            
+            # Cleanup
+            g.Dispose()
+            bmp.Dispose()
+            
+            _log(f"Native screenshot saved to: {filepath}")
+            return {"status": "success", "path": filepath}
+        except Exception as e:
+            _log(f"Error taking native screenshot: {e}")
+            return {"status": "error", "message": str(e)}
 
 def launch_auto_updater():
     """Launch the auto-updater with enhanced search and error handling"""
@@ -319,17 +421,25 @@ def main():
     global VERBOSE_LOGS
     VERBOSE_LOGS = not release_mode
     
-    # Launch auto-updater in background
-    launch_auto_updater()
+    # Launch auto-updater in background only when running as built executable
+    if is_frozen:
+        launch_auto_updater()
     
     # Create window with persistent cookie storage
+    is_frozen = getattr(sys, 'frozen', False)
+    api = API() if not is_frozen else None
+    
     window = webview.create_window(
         APP_TITLE,
         "https://chat.deepseek.com",
         width=1200,
         height=800,
-        text_select=True # Enable selecting text (#2 vanja-san)
+        text_select=True, # Enable selecting text (#2 vanja-san)
+        js_api=api
     )
+    
+    if api:
+        api._window = window
     
     # Add event listener for page load
     window.events.loaded += on_window_loaded
