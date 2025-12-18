@@ -99,10 +99,9 @@ const injectStyles = () => {
             height: 35px;  /* Much Bigger */
             background-color: #ffffff;
             border-radius: 50%;
-            margin-left: 12px;
+            margin-left: 5px;
             vertical-align: middle;
             animation: blink 1.2s infinite ease-in-out;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8); /* Stronger Glow */
         }
         
         @keyframes blink { 
@@ -154,7 +153,6 @@ const injectStyles = () => {
     document.head.appendChild(style);
 };
 
-// Script Loader
 const loadScript = (src) => {
     return new Promise((resolve, reject) => {
         if (document.querySelector(`script[src="${src}"]`)) return resolve();
@@ -165,6 +163,15 @@ const loadScript = (src) => {
         script.onerror = reject;
         document.head.appendChild(script);
     });
+};
+
+// Style Loader
+const loadStyle = (href) => {
+    if (document.querySelector(`link[href="${href}"]`)) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    document.head.appendChild(link);
 };
 
 // ==========================================
@@ -202,26 +209,27 @@ function createUI() {
 // ==========================================
 
 const VersionManager = {
-    currentPort: null,
+    lastVersion: '...',
 
-    async findPort() {
-        if (this.currentPort) return this.currentPort;
-        const checks = CONFIG.ports.map(port =>
-            fetch(`http://localhost:${port}/version.txt`).then(res => res.ok ? port : Promise.reject())
-        );
-        try {
-            this.currentPort = await Promise.any(checks);
-            return this.currentPort;
-        } catch { return 8080; }
-    },
-
-    async update(displayElement) {
-        try {
-            const port = await this.findPort();
-            const response = await fetch(`http://localhost:${port}/version.txt`);
-            const version = await response.text();
-            this.updateFooter(version.trim());
-        } catch (e) { }
+    update() {
+        const fetchVersion = () => {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.get_version) {
+                window.pywebview.api.get_version().then(version => {
+                    this.lastVersion = version;
+                    this.updateFooter(version);
+                }).catch(e => console.error("Failed to read version via API", e));
+            } else {
+                // If API not ready, retry in 500ms (max a few times)
+                if (!this._retries) this._retries = 0;
+                if (this._retries < 10) {
+                    this._retries++;
+                    setTimeout(fetchVersion, 500);
+                } else {
+                    this.updateFooter(this.lastVersion);
+                }
+            }
+        };
+        fetchVersion();
     },
 
     updateFooter(version) {
@@ -229,12 +237,12 @@ const VersionManager = {
         footers.forEach(el => {
             if (el.dataset.dsUpdated) return;
             el.innerHTML = `
-                <div style="opacity:0.6; font-size:12px; color: #888;">
-                    Made by <a href="https://github.com/LousyBook94" target="_blank" style="color:inherit; text-decoration:underline;">LousyBook01</a>
-                    &nbsp;•&nbsp; 
-                    Powered by <a href="https://deepseek.com" target="_blank" style="color:inherit; text-decoration:underline;">DeepSeek</a>
-                    &nbsp;•&nbsp; 
-                    v${version}
+                <div style="opacity:0.6; font-size:12px; color: #888; display: flex; align-items: center; gap: 8px;">
+                    <span>Made by <a href="https://github.com/LousyBook94" target="_blank" style="color:inherit; text-decoration:underline;">LousyBook01</a></span>
+                    <span style="opacity: 0.4;">|</span>
+                    <span>Powered by <a href="https://deepseek.com" target="_blank" style="color:inherit; text-decoration:underline;">DeepSeek</a></span>
+                    <span style="opacity: 0.4;">|</span>
+                    <span>v${version || '1.0.0'}</span>
                 </div>
             `;
             el.dataset.dsUpdated = 'true';
@@ -324,8 +332,21 @@ const MarkdownManager = {
         window.marked.setOptions({ gfm: true, breaks: true });
 
         const renderer = new window.marked.Renderer();
-        renderer.code = (code, lang) => `<pre class="code-block"><code class="language-${lang || 'text'}">${code}</code></pre>`;
-        renderer.codespan = (code) => `<code class="inline-code">${code}</code>`;
+        const escapeHtml = (text) => {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        renderer.code = (token) => {
+            const { text, lang } = token;
+            const escapedText = escapeHtml(text);
+            return `<pre class="code-block"><code class="language-${lang || 'text'}">${escapedText}</code></pre>`;
+        };
+        renderer.codespan = (token) => `<code class="inline-code">${escapeHtml(token.text)}</code>`;
         window.marked.use({ renderer });
     },
 
@@ -365,7 +386,7 @@ function startObserver(uiRefs) {
         }
 
         if (runFooter) {
-            VersionManager.updateFooter(VersionManager.currentPort ? '...' : '...');
+            VersionManager.updateFooter(VersionManager.lastVersion);
         }
 
         if (runGreeting) {
@@ -383,8 +404,8 @@ function startObserver(uiRefs) {
 (async function init() {
     console.log("DeepSeek Client: Initializing...");
     injectStyles();
-    loadScript(CONFIG.resources.fontInter);
-    loadScript(CONFIG.resources.fontMono);
+    loadStyle(CONFIG.resources.fontInter);
+    loadStyle(CONFIG.resources.fontMono);
 
     const uiRefs = createUI();
 
@@ -393,7 +414,6 @@ function startObserver(uiRefs) {
     if (initialGreeting) GreetingManager.init(initialGreeting);
 
     VersionManager.update(uiRefs.tooltipDisplay);
-    setInterval(() => VersionManager.update(uiRefs.tooltipDisplay), 300000);
 
     try {
         await Promise.all([

@@ -251,6 +251,16 @@ class API:
     def __init__(self):
         self._window = None
 
+    def get_version(self):
+        """Read version from version.txt"""
+        try:
+            if os.path.exists('version.txt'):
+                with open('version.txt', 'r') as f:
+                    return f.read().strip()
+        except Exception as e:
+            _log(f"Error reading version.txt: {e}")
+        return "1.0.0"
+
     def take_screenshot(self):
         """Take a native screenshot of the window on Windows"""
         if not self._window:
