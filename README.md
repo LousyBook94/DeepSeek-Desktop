@@ -19,7 +19,7 @@
 2. Download `DeepSeekChat-windows.zip`
 3. Extract the files
 4. Run `DeepSeekChat.exe`
-5. Run `auto-update.bat` to keep your app fresh 🚀
+5. The app now features an **Integrated Auto-Updater**! When a new version is released, you'll see a notification directly in the app to update and restart seamlessly. 🚀
 
 ---
 
