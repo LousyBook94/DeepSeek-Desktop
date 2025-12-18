@@ -6,6 +6,12 @@ import platform
 import datetime
 import base64
 import io
+import threading
+import http.server
+import socketserver
+import socket
+import subprocess
+import time
 
 # For native Windows screenshots
 if platform.system() == "Windows":
@@ -247,6 +253,7 @@ def on_window_loaded(window):
         """
         window.evaluate_js(hotkey_js)
 
+from utils.auto_update import UpdateChecker
 class API:
     def __init__(self):
         self._window = None
@@ -260,6 +267,37 @@ class API:
         except Exception as e:
             _log(f"Error reading version.txt: {e}")
         return "1.0.0"
+
+    def check_for_update(self):
+        """Check for updates using the UpdateChecker"""
+        try:
+            checker = UpdateChecker()
+            need_update, current, latest, info = checker.check_for_update(os.getcwd())
+            return {
+                "status": "success",
+                "need_update": need_update,
+                "current_version": current,
+                "latest_version": latest,
+                "release_notes": info.get("body", "") if info else "",
+                "is_frozen": getattr(sys, 'frozen', False)
+            }
+        except Exception as e:
+            _log(f"Error checking for update: {e}")
+            return {"status": "error", "message": str(e)}
+
+    def start_update(self):
+        """Initiate the update process by launching the standalone updater"""
+        _log("Initiating update...")
+        try:
+            launch_auto_updater()
+            # The app should close itself to allow the updater to work
+            if self._window:
+                # Give a small delay for the updater to start
+                threading.Timer(2.0, lambda: self._window.destroy()).start()
+            return {"status": "success"}
+        except Exception as e:
+            _log(f"Error starting update: {e}")
+            return {"status": "error", "message": str(e)}
 
     def take_screenshot(self):
         """Take a native screenshot of the window on Windows"""
@@ -406,114 +444,101 @@ def launch_auto_updater():
         _log(error_msg)
         show_windows_error_dialog("Auto-Updater Error", error_msg)
 
+class DeepSeekApp:
+    def __init__(self, release_mode=False):
+        self.release_mode = release_mode
+        self.api = API()
+        self.window = None
+        self.server_port = None
+
+    def start_server(self):
+        class FileHandler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, directory=".", **kwargs)
+
+            def end_headers(self):
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Methods', 'GET')
+                self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+                return super().end_headers()
+
+            def do_GET(self):
+                if self.path == '/port':
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write(str(self.server.server_address[1]).encode())
+                else:
+                    super().do_GET()
+
+        def find_available_port(start_port=8080):
+            for port in range(start_port, start_port + 100):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    # Try to bind to the port to check availability
+                    try:
+                        sock.bind(("", port))
+                        return port
+                    except OSError:
+                        continue # Port is in use, try next one
+            return None
+
+        self.server_port = find_available_port()
+        if not self.server_port:
+            _log("Could not find an available port for local server")
+            return
+
+        def run_server():
+            with socketserver.TCPServer(("", self.server_port), FileHandler) as httpd:
+                _log(f"Local server running on port {self.server_port}")
+                httpd.serve_forever()
+
+        threading.Thread(target=run_server, daemon=True).start()
+
+    def run(self):
+        self.start_server()
+        
+        is_frozen = getattr(sys, 'frozen', False)
+        
+        self.window = webview.create_window(
+            APP_TITLE,
+            "https://chat.deepseek.com",
+            width=1200,
+            height=800,
+            text_select=True,
+            js_api=self.api
+        )
+        self.api._window = self.window
+        self.window.events.loaded += on_window_loaded
+        
+        # The update check is now handled by the UI (inject.js) 
+        # which calls API.check_for_updates() and API.start_update()
+        # instead of launching a background console on every startup.
+        pass
+
+        webview.start(
+            private_mode=False,
+            storage_path="./data",
+            debug=not self.release_mode
+        )
+
 def main():
-    # Parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--release', action='store_true', help='Disable debug tools for release build')
+    parser.add_argument('--release', action='store_true', help='Disable debug tools')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--dark-titlebar', action='store_true', help='Force dark titlebar')
-    group.add_argument('--light-titlebar', action='store_true', help='Force light titlebar')
+    group.add_argument('--dark-titlebar', action='store_true')
+    group.add_argument('--light-titlebar', action='store_true')
     args = parser.parse_args()
     
-    # Store titlebar preference globally for access in other functions
     global titlebar_preference
-    if args.dark_titlebar:
-        titlebar_preference = 'dark'
-    elif args.light_titlebar:
-        titlebar_preference = 'light'
-    else:
-        titlebar_preference = 'auto'
+    titlebar_preference = 'dark' if args.dark_titlebar else ('light' if args.light_titlebar else 'auto')
     
-    # Auto-enable release mode for frozen builds
     is_frozen = getattr(sys, 'frozen', False)
     release_mode = args.release or is_frozen
-    # Gate verbose logs in release mode
+    
     global VERBOSE_LOGS
     VERBOSE_LOGS = not release_mode
     
-    # Launch auto-updater in background only when running as built executable
-    if is_frozen:
-        launch_auto_updater()
-    
-    # Create window with persistent cookie storage
-    is_frozen = getattr(sys, 'frozen', False)
-    api = API() if not is_frozen else None
-    
-    window = webview.create_window(
-        APP_TITLE,
-        "https://chat.deepseek.com",
-        width=1200,
-        height=800,
-        text_select=True, # Enable selecting text (#2 vanja-san)
-        js_api=api
-    )
-    
-    if api:
-        api._window = window
-    
-    # Add event listener for page load
-    window.events.loaded += on_window_loaded
-    
-    # Create a local server to serve static files like version.txt
-    import http.server
-    import socketserver
-    import threading
-    import os
-    
-    class FileHandler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=".", **kwargs)
-
-        def end_headers(self):
-            # Add CORS headers to allow access from the webview
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET')
-            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
-            return super().end_headers()
-
-        def do_GET(self):
-            if self.path == '/port':
-                # Return the actual port number
-                self.send_response(200)
-                self.send_header('Content-type', 'text/plain')
-                self.end_headers()
-                self.wfile.write(str(self.server.server_address[1]).encode())
-            else:
-                # Handle other requests normally
-                super().do_GET()
-
-    def find_available_port(start_port=8080, max_attempts=100):
-        """Find an available port starting from start_port"""
-        import socket
-        for port in range(start_port, start_port + max_attempts):
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                    sock.bind(("", port))
-                    return port
-            except OSError:
-                continue
-        raise OSError(f"No available ports found in range {start_port}-{start_port + max_attempts - 1}")
-
-    def start_http_server():
-        # Find an available port starting from 8080
-        try:
-            port = find_available_port(8080)
-            with socketserver.TCPServer(("", port), FileHandler) as httpd:
-                print(f"HTTP server running on port {port}")
-                httpd.serve_forever()
-        except OSError as e:
-            print(f"Failed to start HTTP server: {e}")
-
-    # Start HTTP server in a separate thread
-    server_thread = threading.Thread(target=start_http_server, daemon=True)
-    server_thread.start()
-    
-    # Start webview with persistent storage
-    webview.start(
-        private_mode=False,  # Disable private mode for persistent cookies
-        storage_path="./data",  # Storage directory
-        debug=not release_mode  # Enable dev tools unless in release mode
-    )
-
+    app = DeepSeekApp(release_mode=release_mode)
+    app.run()
 if __name__ == "__main__":
     main()

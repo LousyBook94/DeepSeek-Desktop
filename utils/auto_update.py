@@ -141,6 +141,26 @@ def bring_console_to_front():
     except Exception as e:
         print(f"Could not bring console to front: {e}")
 
+class UpdateChecker:
+    def __init__(self, logger=None):
+        self.logger = logger or logging.getLogger(__name__)
+
+    def get_local_version(self, script_dir):
+        return get_current_version(script_dir)
+
+    def fetch_latest_info(self):
+        latest_version, release_info = fetch_latest_version_with_retry(self.logger)
+        return latest_version, release_info
+
+    def check_for_update(self, script_dir):
+        current = self.get_local_version(script_dir)
+        latest, info = self.fetch_latest_info()
+        if not latest:
+            return False, current, None, None
+        
+        need_update = not compare_versions(current, latest)
+        return need_update, current, latest, info
+
 def download_release_with_retry(asset_url, asset_name, logger):
     """Downloads the release zip with retry logic and progress."""
     temp_zip_path = os.path.join(TEMP_DIR, "update.zip")

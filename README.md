@@ -1,5 +1,7 @@
 ## 🚀 DeepSeek Desktop
 
+[![CI](https://github.com/LousyBook94/DeepSeek-Desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/LousyBook94/DeepSeek-Desktop/actions/workflows/ci.yml)
+
 > Your ultimate desktop companion for DeepSeek Chat — now smoother, prettier, and packed with magic ✨
 
 **⚠️ Note:** This project is still under active development. Expect more crazy features soon!
@@ -50,7 +52,11 @@
   * Matches your Windows system theme automatically
   * Manual override available
 
-* 🔃 **Auto Updater**
+* 🔃 **Integrated Auto Updater**
+
+  * **In-UI Notifications**: Sleek glassmorphic banner when a new version is available
+  * **One-Click Update**: Restart and update directly from the app
+  * **Manual Check**: Press **Ctrl+Shift+U** to trigger a check anytime
 
 * 🔄 **Real-time Sync & Navigation**
 
@@ -67,9 +73,10 @@
   * XSS protection via DOMPurify
   * Proper spacing & inline code handling
 
-* 📸 **Developer Tools**
+* 📸 **Developer & Utility Tools**
   * **Ctrl+Shift+S**: Instantly capture a screenshot of the window (Development mode only)
-  * Screensots are automatically saved to the `assets/` folder with timestamps
+  * **Ctrl+Shift+U**: Manually trigger an update check (Works in both dev and production)
+  * Screenshots are automatically saved to the `assets/` folder with timestamps
 
 ---
 
@@ -87,6 +94,9 @@ DeepSeekChat.exe --release
 
 # Take a screenshot (Development mode only)
 # Press Ctrl + Shift + S
+
+# Check for updates manually
+# Press Ctrl + Shift + U
 ```
 
 By default, the titlebar **matches your Windows theme** automatically 🌙☀️
@@ -97,7 +107,7 @@ By default, the titlebar **matches your Windows theme** automatically 🌙☀️
 
 * [x] Dark titlebar ✅
 * [ ] Custom themes
-* [x] Keyboard shortcuts (Screenshot: Ctrl+Shift+S) ✅
+* [x] Keyboard shortcuts (Screenshot: Ctrl+Shift+S, Update: Ctrl+Shift+U) ✅
 * [ ] Cross-platform builds (Mac/Linux)
 * [ ] System tray integration
 

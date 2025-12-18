@@ -3,20 +3,15 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1.65"
+  VERSION: "0.1.66"
   RELEASE_BODY: |
     🚀 V__VERSION__ released yayyyyyy!!!! ✨
     
     ### What's new
-    - A proper code block renderer
-    - Better html filtering
-    - Improved footer
-    - Improved decluttered UI
-    - Recoded injection code
-    - Fixed morning display
-    - Improved greeting UI
-    - Fixed extra new line in user prompts
-    - Built a dev screenshot tool
+    - Integrated In-UI Auto-Updater 🚀 (hopefully, at least partially) @vanja-san #21
+    - Modern Notification Banner
+    - Robust Codebase Refactor
+    - Manual Update Shortcut (Ctrl+Shift+U)
 
 jobs:
   build-and-release:

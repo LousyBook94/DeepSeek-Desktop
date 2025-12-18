@@ -15,8 +15,7 @@ from utils.auto_update import (
     compare_versions,
     get_script_directory,
     fetch_latest_version_with_retry,
-    # We can't easily test the main() function without a complex setup
-    # So we'll focus on the helper functions.
+    UpdateChecker,
 )
 
 @pytest.fixture
@@ -114,6 +113,31 @@ def test_fetch_latest_version_with_retry_failure(mock_sleep, mock_get, temp_test
     assert info is None
     assert mock_get.call_count == 5 # MAX_RETRIES
     assert mock_sleep.call_count == 4 # MAX_RETRIES - 1
+
+def test_update_checker_basic(temp_test_dir):
+    """Test the UpdateChecker class's basic functionality."""
+    with patch('utils.auto_update.fetch_latest_version_with_retry') as mock_fetch:
+        mock_fetch.return_value = ("1.0.1", {"tag_name": "v1.0.1", "body": "New version"})
+        
+        checker = UpdateChecker()
+        need_update, current, latest, info = checker.check_for_update(temp_test_dir)
+        
+        assert need_update is True
+        assert current == "1.0.0"
+        assert latest == "1.0.1"
+        assert info["tag_name"] == "v1.0.1"
+
+def test_update_checker_no_update(temp_test_dir):
+    """Test the UpdateChecker class when no update is needed."""
+    with patch('utils.auto_update.fetch_latest_version_with_retry') as mock_fetch:
+        mock_fetch.return_value = ("1.0.0", {"tag_name": "v1.0.0", "body": "Already up to date"})
+        
+        checker = UpdateChecker()
+        need_update, current, latest, info = checker.check_for_update(temp_test_dir)
+        
+        assert need_update is False
+        assert current == "1.0.0"
+        assert latest == "1.0.0"
 
 # We can't easily test the main() function without a complex setup
 # involving creating releases, downloading files, etc.

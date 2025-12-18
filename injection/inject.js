@@ -19,7 +19,8 @@ const CONFIG = {
         domPurify: 'https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js',
         fontInter: 'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap',
         fontMono: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap'
-    }
+    },
+    updateInterval: 1000 * 60 * 60 // Check every hour
 };
 
 // ==========================================
@@ -141,6 +142,67 @@ const injectStyles = () => {
             color: #fff;
         }
 
+        /* --- Update Banner --- */
+        #ds-update-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            z-index: 10000;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(77, 107, 254, 0.3);
+            backdrop-filter: blur(20px);
+            padding: 12px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            color: #fff;
+            max-width: 90%;
+        }
+
+        #ds-update-banner.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .ds-update-title {
+            font-weight: 600;
+            color: #4d6bfe;
+            font-size: 14px;
+        }
+
+        .ds-update-desc {
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        .ds-update-btn {
+            background: #4d6bfe;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ds-update-btn:hover {
+            background: #3a56e0;
+            transform: scale(1.05);
+        }
+
+        .ds-update-close {
+            opacity: 0.4;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .ds-update-close:hover { opacity: 1; }
+
         /* --- Force Style for ._57370c5 --- */
         ._57370c5 {
             z-index: 100 !important;
@@ -174,65 +236,101 @@ const loadStyle = (href) => {
     document.head.appendChild(link);
 };
 
-// ==========================================
-// 3. UI COMPONENTS
-// ==========================================
+const UIManager = {
+    createRefreshButton() {
+        const wrapper = document.createElement('div');
+        wrapper.id = 'ds-ui-wrapper';
+        wrapper.innerHTML = `
+            <button id="ds-refresh-btn" title="Refresh Application">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+            </button>
+        `;
 
-function createUI() {
-    const wrapper = document.createElement('div');
-    wrapper.id = 'ds-ui-wrapper';
+        const btn = wrapper.querySelector('#ds-refresh-btn');
+        btn.addEventListener('click', () => {
+            btn.querySelector('svg').classList.add('ds-spin');
+            setTimeout(() => window.location.reload(), 500);
+        });
 
-    // --- BUTTON ---
-    const btn = document.createElement('button');
-    btn.id = 'ds-refresh-btn';
-    btn.title = 'Click to refresh';
-    btn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-        </svg>
-    `;
-
-    btn.addEventListener('click', (e) => {
-        const svg = btn.querySelector('svg');
-        svg.classList.add('ds-spin');
-        document.dispatchEvent(new CustomEvent('deepseekRefresh', { detail: { action: 'refresh' } }));
-        setTimeout(() => window.location.reload(), 500);
-    });
-
-    wrapper.appendChild(btn);
-    document.body.appendChild(wrapper);
-    return { tooltipDisplay: null };
-}
-
-// ==========================================
-// 4. LOGIC MANAGERS
-// ==========================================
-
-const VersionManager = {
-    lastVersion: '...',
-
-    update() {
-        const fetchVersion = () => {
-            if (window.pywebview && window.pywebview.api && window.pywebview.api.get_version) {
-                window.pywebview.api.get_version().then(version => {
-                    this.lastVersion = version;
-                    this.updateFooter(version);
-                }).catch(e => console.error("Failed to read version via API", e));
-            } else {
-                // If API not ready, retry in 500ms (max a few times)
-                if (!this._retries) this._retries = 0;
-                if (this._retries < 10) {
-                    this._retries++;
-                    setTimeout(fetchVersion, 500);
-                } else {
-                    this.updateFooter(this.lastVersion);
-                }
-            }
-        };
-        fetchVersion();
+        document.body.appendChild(wrapper);
     },
 
-    updateFooter(version) {
+    showUpdateBanner(version) {
+        const banner = document.createElement('div');
+        banner.id = 'ds-update-banner';
+        banner.innerHTML = `
+            <div style="background: rgba(77, 107, 254, 0.2); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #4d6bfe;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+                </svg>
+            </div>
+            <div style="flex: 1;">
+                <div class="ds-update-title">Update Available (${version})</div>
+                <div class="ds-update-desc">A new version of DeepSeek Desktop is ready.</div>
+            </div>
+            <button class="ds-update-btn" id="ds-update-now">Update & Restart</button>
+            <div class="ds-update-close" id="ds-update-later">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"></path>
+                </svg>
+            </div>
+        `;
+
+        document.body.appendChild(banner);
+        setTimeout(() => banner.classList.add('visible'), 100);
+
+        banner.querySelector('#ds-update-now').addEventListener('click', () => {
+            banner.querySelector('#ds-update-now').textContent = 'Launching...';
+            if (window.pywebview && window.pywebview.api) {
+                window.pywebview.api.start_update();
+            }
+        });
+
+        banner.querySelector('#ds-update-later').addEventListener('click', () => {
+            banner.classList.remove('visible');
+            setTimeout(() => banner.remove(), 600);
+        });
+    }
+};
+
+const VersionManager = {
+    currentVersion: '...',
+
+    async init() {
+        if (!window.pywebview || !window.pywebview.api) {
+            setTimeout(() => this.init(), 500);
+            return;
+        }
+
+        try {
+            this.currentVersion = await window.pywebview.api.get_version();
+            this.updateFooters();
+            this.checkForUpdates();
+        } catch (e) {
+            console.error("VersionManager init failed", e);
+        }
+    },
+
+    async checkForUpdates(isManual = false) {
+        if (!window.pywebview || !window.pywebview.api) return;
+
+        try {
+            const result = await window.pywebview.api.check_for_update();
+            if (result.status === "success") {
+                const shouldShow = result.need_update || (isManual && !result.is_frozen);
+                if (shouldShow) {
+                    const displayVersion = result.latest_version || "1.1.0-dev";
+                    UIManager.showUpdateBanner(displayVersion);
+                }
+            }
+        } catch (e) {
+            console.error("Update check failed", e);
+        }
+    },
+
+    updateFooters() {
         const footers = document.querySelectorAll(CONFIG.selectors.textReplacementTargets.join(','));
         footers.forEach(el => {
             if (el.dataset.dsUpdated) return;
@@ -242,7 +340,7 @@ const VersionManager = {
                     <span style="opacity: 0.4;">|</span>
                     <span>Powered by <a href="https://deepseek.com" target="_blank" style="color:inherit; text-decoration:underline;">DeepSeek</a></span>
                     <span style="opacity: 0.4;">|</span>
-                    <span>v${version || '1.0.0'}</span>
+                    <span>v${this.currentVersion}</span>
                 </div>
             `;
             el.dataset.dsUpdated = 'true';
@@ -367,26 +465,33 @@ const MarkdownManager = {
 // ==========================================
 // 5. OBSERVERS
 // ==========================================
-function startObserver(uiRefs) {
+// ==========================================
+// 5. OBSERVERS
+// ==========================================
+function startObserver() {
     const observer = new MutationObserver((mutations) => {
         let runMarkdown = false, runFooter = false, runGreeting = false;
 
         mutations.forEach(m => {
-            if (m.type === 'childList') {
-                runMarkdown = true; runFooter = true; runGreeting = true;
+            if (m.addedNodes.length > 0) {
+                runMarkdown = true;
+                runFooter = true;
+                runGreeting = true;
             }
         });
 
+        // Cleanup
         CONFIG.selectors.elementsToRemove.forEach(sel => {
             document.querySelectorAll(sel).forEach(el => el.remove());
         });
 
+        // Updates
         if (runMarkdown && window.marked) {
             document.querySelectorAll(CONFIG.selectors.markdownBody).forEach(el => MarkdownManager.process(el));
         }
 
         if (runFooter) {
-            VersionManager.updateFooter(VersionManager.lastVersion);
+            VersionManager.updateFooters();
         }
 
         if (runGreeting) {
@@ -404,16 +509,16 @@ function startObserver(uiRefs) {
 (async function init() {
     console.log("DeepSeek Client: Initializing...");
     injectStyles();
+
+    // UI Setup
+    UIManager.createRefreshButton();
+
+    // Logic Setup
+    VersionManager.init();
+
+    // Resource Loading
     loadStyle(CONFIG.resources.fontInter);
     loadStyle(CONFIG.resources.fontMono);
-
-    const uiRefs = createUI();
-
-    // Force check immediately for greeting (Fixes slow load)
-    const initialGreeting = document.querySelector(CONFIG.selectors.greetingContainer);
-    if (initialGreeting) GreetingManager.init(initialGreeting);
-
-    VersionManager.update(uiRefs.tooltipDisplay);
 
     try {
         await Promise.all([
@@ -421,13 +526,29 @@ function startObserver(uiRefs) {
             loadScript(CONFIG.resources.domPurify)
         ]);
         MarkdownManager.configure();
-        startObserver(uiRefs);
-        document.querySelectorAll(CONFIG.selectors.markdownBody).forEach(el => MarkdownManager.process(el));
-    } catch (e) { console.error("Libs failed", e); }
+        startObserver();
 
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.body.classList.toggle('dark-mode', isDark);
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-        document.body.classList.toggle('dark-mode', e.matches);
+        // Initial manual runs
+        document.querySelectorAll(CONFIG.selectors.markdownBody).forEach(el => MarkdownManager.process(el));
+        const initialGreeting = document.querySelector(CONFIG.selectors.greetingContainer);
+        if (initialGreeting) GreetingManager.init(initialGreeting);
+    } catch (e) {
+        console.error("DeepSeek Client: Initialization failed", e);
+    }
+
+    // Dark Mode Sync
+    const syncDarkMode = (isDark) => document.body.classList.toggle('dark-mode', isDark);
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+        // Ctrl+Shift+U for Update Check
+        if (e.ctrlKey && e.shiftKey && e.key === 'U') {
+            e.preventDefault();
+            console.log("DeepSeek Client: Manual update check triggered.");
+            VersionManager.checkForUpdates(true);
+        }
     });
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    syncDarkMode(mediaQuery.matches);
+    mediaQuery.addEventListener('change', e => syncDarkMode(e.matches));
 })();
