@@ -45,6 +45,14 @@ jobs:
         Add-Content -Path $env:GITHUB_ENV -Value $releaseBody
         Add-Content -Path $env:GITHUB_ENV -Value "EOF"
 
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DeepSeekChat-windows
+        path: zipped/DeepSeekChat-windows.zip
+        retention-days: 30
+        compression-level: 9
+        
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:

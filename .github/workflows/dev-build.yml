@@ -1,0 +1,41 @@
+name: Dev Build
+
+on: workflow_dispatch
+
+env:
+  VERSION: "0.1.68"
+  BUILD_TYPE: "dev"
+
+jobs:
+  build-dev:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build application
+      run: python build.py --fresh
+
+    - name: Rename build.zip to DeepSeekChat-dev-windows.zip
+      run: Rename-Item -Path .\zipped\build.zip -NewName DeepSeekChat-dev-windows.zip
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DeepSeekChat-dev-windows
+        path: zipped/DeepSeekChat-dev-windows.zip
+        retention-days: 30
+        compression-level: 9

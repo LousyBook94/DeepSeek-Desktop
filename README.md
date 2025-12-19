@@ -79,7 +79,19 @@
 * 📸 **Developer & Utility Tools**
   * **Ctrl+Shift+S**: Instantly capture a screenshot of the window (Development mode only)
   * **Ctrl+Shift+U**: Manually trigger an update check (Works in both dev and production)
+  * **Ctrl+Shift+L**: Open the logs viewer window (Works in both dev and production)
   * Screenshots are automatically saved to the `assets/` folder with timestamps
+
+* 📊 **Comprehensive Logging System**
+  * **Always Active**: Logs are recorded from the moment the app starts, even when the log viewer is closed
+  * **Timestamped Entries**: Every log includes a precise timestamp for easy debugging
+  * **Smart Management**: Automatically keeps the last 1000 log entries to manage memory usage
+  * **Log Viewer Features**:
+    - Dark theme CustomTkinter interface
+    - Real-time log display with timestamps
+    - Refresh, Copy All, Save to File, and Clear buttons
+    - Scrollable text area for easy navigation
+  * **Export Options**: Save logs to timestamped text files or copy to clipboard
 
 ---
 
@@ -193,4 +205,3 @@ By default, the titlebar **matches your Windows theme** automatically 🌙☀️
 
 * Icons by [Icons8](https://icons8.com)
 * Powered by [DeepSeek](https://deepseek.com)
-

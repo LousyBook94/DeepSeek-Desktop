@@ -12,6 +12,9 @@ import socketserver
 import socket
 import subprocess
 import time
+import logging
+import queue
+import customtkinter as ctk
 
 # For native Windows screenshots
 if platform.system() == "Windows":
@@ -28,10 +31,26 @@ APP_TITLE = "DeepSeek - Into the Unknown"
 
 # Verbose logging control (toggled in main based on release_mode)
 VERBOSE_LOGS = True
+
+# Global log queue for storing all log messages
+log_queue = queue.Queue()
+log_records = []
+
 def _log(msg: str):
-    global VERBOSE_LOGS
-    if VERBOSE_LOGS:
-        print(msg)
+    global VERBOSE_LOGS, log_queue, log_records
+    
+    # Add to log queue and records
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_entry = f"[{timestamp}] {msg}"
+    log_queue.put(log_entry)
+    log_records.append(log_entry)
+    
+    # Keep only last 1000 log entries
+    if len(log_records) > 1000:
+        log_records = log_records[-1000:]
+    
+    # Always print to console for visibility
+    print(msg)
 
 # Windows-specific imports for dark titlebar
 if platform.system() == "Windows":
@@ -252,11 +271,138 @@ def on_window_loaded(window):
         });
         """
         window.evaluate_js(hotkey_js)
+    
+    # Inject logs hotkey (works in both dev and frozen mode)
+    logs_hotkey_js = """
+    console.log("DeepSeek: Logs hotkey active (Ctrl+Shift+L)");
+    window.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'L') {
+            e.preventDefault();
+            console.log("Logs hotkey triggered");
+            if (window.pywebview && window.pywebview.api) {
+                window.pywebview.api.open_logs_window().then(function(response) {
+                    console.log("Logs window response:", response);
+                });
+            }
+        }
+    });
+    """
+    window.evaluate_js(logs_hotkey_js)
 
 from utils.auto_update import UpdateChecker
 class API:
     def __init__(self):
         self._window = None
+
+    def get_logs(self):
+        """Get all log records"""
+        global log_records
+        return {
+            "status": "success",
+            "logs": log_records
+        }
+
+    def open_logs_window(self):
+        """Open a CustomTkinter window showing all logs"""
+        global log_records
+        
+        def copy_all_logs():
+            try:
+                import pyperclip
+                pyperclip.copy('\n'.join(log_records))
+                status_label.configure(text="Copied all logs to clipboard!", text_color="green")
+            except ImportError:
+                status_label.configure(text="Install pyperclip to copy logs", text_color="orange")
+            except Exception as e:
+                status_label.configure(text=f"Copy failed: {e}", text_color="red")
+        
+        def clear_logs():
+            global log_records
+            log_records.clear()
+            text_box.delete("1.0", "end")
+            status_label.configure(text="Logs cleared", text_color="green")
+        
+        def refresh_logs():
+            text_box.delete("1.0", "end")
+            text_box.insert("1.0", '\n'.join(log_records))
+            status_label.configure(text=f"Showing {len(log_records)} log entries", text_color="white")
+        
+        def save_logs():
+            try:
+                filename = f"deepseek-logs-{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write('\n'.join(log_records))
+                status_label.configure(text=f"Logs saved to {filename}", text_color="green")
+            except Exception as e:
+                status_label.configure(text=f"Save failed: {e}", text_color="red")
+
+        # Create the log window
+        log_window = ctk.CTk()
+        log_window.title("DeepSeek - Logs")
+        log_window.geometry("800x600")
+        
+        # Set dark theme
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("blue")
+        
+        # Main frame
+        main_frame = ctk.CTkFrame(log_window)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Title
+        title_label = ctk.CTkLabel(main_frame, text="DeepSeek Application Logs", font=("Inter", 16, "bold"))
+        title_label.pack(pady=5)
+        
+        # Status label
+        status_label = ctk.CTkLabel(main_frame, text=f"Showing {len(log_records)} log entries", font=("Inter", 12))
+        status_label.pack(pady=2)
+        
+        # Button frame
+        button_frame = ctk.CTkFrame(main_frame)
+        button_frame.pack(fill="x", padx=10, pady=5)
+        
+        # Buttons
+        refresh_btn = ctk.CTkButton(button_frame, text="Refresh", command=refresh_logs, width=100)
+        refresh_btn.pack(side="left", padx=5)
+        
+        copy_btn = ctk.CTkButton(button_frame, text="Copy All", command=copy_all_logs, width=100)
+        copy_btn.pack(side="left", padx=5)
+        
+        save_btn = ctk.CTkButton(button_frame, text="Save to File", command=save_logs, width=100)
+        save_btn.pack(side="left", padx=5)
+        
+        clear_btn = ctk.CTkButton(button_frame, text="Clear", command=clear_logs, width=100, fg_color="red")
+        clear_btn.pack(side="left", padx=5)
+        
+        # Text box with scrollbar
+        text_frame = ctk.CTkFrame(main_frame)
+        text_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        text_box = ctk.CTkTextbox(text_frame, wrap="word", font=("Consolas", 11))
+        text_box.pack(side="left", fill="both", expand=True)
+        
+        # Scrollbar
+        scrollbar = ctk.CTkScrollbar(text_frame, command=text_box.yview)
+        scrollbar.pack(side="right", fill="y")
+        text_box.configure(yscrollcommand=scrollbar.set)
+        
+        # Initial load
+        refresh_logs()
+        
+        # Auto-refresh every 2 seconds
+        def auto_refresh():
+            try:
+                refresh_logs()
+                log_window.after(2000, auto_refresh)
+            except:
+                pass  # Window closed
+        
+        auto_refresh()
+        
+        # Run the window
+        log_window.mainloop()
+        
+        return {"status": "success", "message": "Logs window opened"}
 
     def get_version(self):
         """Read version from version.txt"""

@@ -3,3 +3,4 @@ pyinstaller
 requests
 tqdm
 rich
+customtkinter
