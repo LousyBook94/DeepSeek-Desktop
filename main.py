@@ -312,7 +312,7 @@ class API:
                 pyperclip.copy('\n'.join(log_records))
                 status_label.configure(text="Copied all logs to clipboard!", text_color="green")
             except ImportError:
-                status_label.configure(text="Install pyperclip to copy logs", text_color="orange")
+                status_label.configure(text="Please install pyperclip: pip install pyperclip", text_color="orange")
             except Exception as e:
                 status_label.configure(text=f"Copy failed: {e}", text_color="red")
         

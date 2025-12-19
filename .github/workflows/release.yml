@@ -34,9 +34,9 @@ jobs:
       run: python build.py --fresh
 
 
-    - name: Rename build.zip to DeepSeekChat-windows.zip
-      run: Rename-Item -Path .\zipped\build.zip -NewName DeepSeekChat-windows.zip
-      
+    - name: Create release zip
+      run: |
+        Compress-Archive -Path .\built\* -DestinationPath .\zipped\DeepSeekChat-windows.zip -Force
     - name: Prepare release body
       id: prepare_release
       run: |

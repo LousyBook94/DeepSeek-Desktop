@@ -40,7 +40,7 @@ const injectStyles = () => {
             line-height: 1.5;
         }
 
-        /* This ensures the LAST element inside the bubble has no bottom margin, 
+        /* This ensures that the LAST element inside the bubble has no bottom margin, 
            preventing the "huge space" at the bottom */
         ${CONFIG.selectors.markdownBody} > *:last-child {
             margin-bottom: 0 !important;

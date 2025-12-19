@@ -29,9 +29,9 @@ jobs:
     - name: Build application
       run: python build.py --fresh
 
-    - name: Rename build.zip to DeepSeekChat-dev-windows.zip
-      run: Rename-Item -Path .\zipped\build.zip -NewName DeepSeekChat-dev-windows.zip
-      
+    - name: Create dev build zip
+      run: |
+        Compress-Archive -Path .\built\* -DestinationPath .\zipped\DeepSeekChat-dev-windows.zip -Force
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:

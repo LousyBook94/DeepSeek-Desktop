@@ -3,7 +3,6 @@ import shutil
 import subprocess
 import sys
 import argparse
-import zipfile  # For creating build.zip
 import re  # For parsing version from workflow file
 
 def get_version_from_workflow():
@@ -144,21 +143,7 @@ def build_app(fresh=False):
         else:
             shutil.copy(src_path, dest_path)
     
-    # Create zipped directory if it doesn't exist
-    zip_dir = "zipped"
-    os.makedirs(zip_dir, exist_ok=True)
-    zip_path = os.path.join(zip_dir, "build.zip")
-    
-    # Create build.zip in the zipped directory
-    with zipfile.ZipFile(zip_path, 'w') as zipf:
-        for root, dirs, files in os.walk(dist_dir):
-            for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, dist_dir)
-                zipf.write(file_path, arcname)
-    
     print("\nBuild complete! Executable and resources are in ./built/ directory")
-    print(f"Zip archive created at {zip_path}")
     
     # Open the output directory in Explorer
     os.startfile(os.path.abspath(dist_dir))

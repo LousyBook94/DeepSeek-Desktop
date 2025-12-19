@@ -32,7 +32,7 @@ MAX_RETRIES = 5
 RETRY_DELAY = 5
 
 def get_script_directory():
-    """Returns the directory where the script is located."""
+    """Returns directory where script is located."""
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)
     else:
@@ -55,7 +55,7 @@ def setup_logging(script_dir):
     return logging.getLogger()
 
 def get_current_version(script_dir):
-    """Reads the current version from the VERSION_FILE."""
+    """Reads current version from the VERSION_FILE."""
     version_path = os.path.join(script_dir, VERSION_FILE)
     if os.path.exists(version_path):
         with open(version_path, 'r') as f:
@@ -68,7 +68,15 @@ def fetch_latest_version_with_retry(logger):
         for attempt in range(MAX_RETRIES):
             try:
                 logger.debug(f"[Attempt {attempt+1}/{MAX_RETRIES}] Fetching release info from GitHub...")
-                response = requests.get(REPO_URL, timeout=60)
+                
+                # Set headers to avoid SSL issues and improve compatibility
+                headers = {
+                    'User-Agent': 'DeepSeek-Desktop-Updater/1.0',
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Connection': 'keep-alive'
+                }
+                
+                response = requests.get(REPO_URL, timeout=60, headers=headers)
                 response.raise_for_status()
                 release_info = response.json()
                 
@@ -78,8 +86,38 @@ def fetch_latest_version_with_retry(logger):
                     raise ValueError("Version tag not found in release.")
                     
                 latest_version = latest_version.lstrip('v')
-                console.print(f"[green]✓[/green] Successfully fetched version info")
+                console.print(f"[green][OK][/green] Successfully fetched version info")
                 return latest_version, release_info
+            except requests.exceptions.SSLError as e:
+                error_msg = f"[{attempt + 1}/{MAX_RETRIES}] SSL Error: {e}"
+                logger.error(error_msg)
+                
+                if attempt < MAX_RETRIES - 1:
+                    console.print(f"[yellow][WARN][/yellow] SSL error. Retrying in {RETRY_DELAY} seconds...")
+                    time.sleep(RETRY_DELAY)
+                else:
+                    console.print(f"[red][FAIL][/red] SSL connection failed after all attempts")
+                    return None, None
+            except requests.exceptions.ConnectionError as e:
+                error_msg = f"[{attempt + 1}/{MAX_RETRIES}] Connection Error: {e}"
+                logger.error(error_msg)
+                
+                if attempt < MAX_RETRIES - 1:
+                    console.print(f"[yellow][WARN][/yellow] Connection error. Retrying in {RETRY_DELAY} seconds...")
+                    time.sleep(RETRY_DELAY)
+                else:
+                    console.print(f"[red][FAIL][/red] Connection failed after all attempts")
+                    return None, None
+            except requests.exceptions.Timeout as e:
+                error_msg = f"[{attempt + 1}/{MAX_RETRIES}] Timeout Error: {e}"
+                logger.error(error_msg)
+                
+                if attempt < MAX_RETRIES - 1:
+                    console.print(f"[yellow][WARN][/yellow] Timeout error. Retrying in {RETRY_DELAY} seconds...")
+                    time.sleep(RETRY_DELAY)
+                else:
+                    console.print(f"[red][FAIL][/red] Request timeout after all attempts")
+                    return None, None
             except Exception as e:
                 error_msg = f"[{attempt + 1}/{MAX_RETRIES}] Failed to fetch release info: {e}"
                 if 'response' in locals():
@@ -87,10 +125,10 @@ def fetch_latest_version_with_retry(logger):
                 logger.error(error_msg)
                 
                 if attempt < MAX_RETRIES - 1:
-                    console.print(f"[yellow]⚠[/yellow] Retrying in {RETRY_DELAY} seconds...")
+                    console.print(f"[yellow][WARN][/yellow] Error occurred. Retrying in {RETRY_DELAY} seconds...")
                     time.sleep(RETRY_DELAY)
                 else:
-                    console.print(f"[red]✗[/red] All attempts to fetch release info failed")
+                    console.print(f"[red][FAIL][/red] All attempts to fetch release info failed")
                     return None, None
 
 def compare_versions(current, latest):
@@ -131,7 +169,7 @@ def compare_versions(current, latest):
 def bring_console_to_front():
     """Brings the console window to the front (Windows only)."""
     try:
-        # Простой вызов PowerShell для активации консоли
+        # Simple PowerShell call to activate console
         subprocess.run(
             ['powershell', '-Command', 'Write-Host "Bringing console to front..."'],
             check=True,
@@ -226,20 +264,20 @@ def download_release_with_retry(asset_url, asset_name, logger):
             
             if os.path.exists(temp_zip_path) and os.path.getsize(temp_zip_path) > 0:
                 elapsed = time.time() - start_time
-                console.print(f"[green]✓[/green] Download complete! Elapsed time: {format_time(elapsed)}")
+                console.print(f"[green][OK][/green] Download complete! Elapsed time: {format_time(elapsed)}")
                 return temp_zip_path
             else:
                 raise IOError("Downloaded file is empty or not found.")
 
         except Exception as e:
             logger.error(f"[{attempt + 1}/{MAX_RETRIES}] Download failed: {e}")
-            console.print(f"[red]✗[/red] Download failed: {e}")
+            console.print(f"[red][FAIL][/red] Download failed: {e}")
             
             if attempt < MAX_RETRIES - 1:
-                console.print(f"[yellow]⚠[/yellow] Retrying in {RETRY_DELAY} seconds...")
+                console.print(f"[yellow][WARN][/yellow] Retrying in {RETRY_DELAY} seconds...")
                 time.sleep(RETRY_DELAY)
             else:
-                console.print(f"[red]✗[/red] All download attempts failed")
+                console.print(f"[red][FAIL][/red] All download attempts failed")
                 raise
     return None
 
@@ -281,18 +319,18 @@ def create_backup(script_dir, app_name, version):
         item_path = os.path.join(script_dir, item_name)
         if os.path.exists(item_path):
             shutil.copy2(item_path, os.path.join(backup_dir, item_name))
-            backup_table.add_row(item_name, "✓ Backed up")
+            backup_table.add_row(item_name, "[OK] Backed up")
         else:
-            backup_table.add_row(item_name, "✗ Not found")
+            backup_table.add_row(item_name, "[FAIL] Not found")
 
     for dir_name in dirs_to_backup:
         dir_path = os.path.join(script_dir, dir_name)
         if os.path.exists(dir_path):
             dest_path = os.path.join(backup_dir, dir_name)
             shutil.copytree(dir_path, dest_path)
-            backup_table.add_row(f"{dir_name}/", "✓ Backed up")
+            backup_table.add_row(f"{dir_name}/", "[OK] Backed up")
         else:
-            backup_table.add_row(f"{dir_name}/", "✗ Not found")
+            backup_table.add_row(f"{dir_name}/", "[FAIL] Not found")
     
     console.print(backup_table)
     return backup_dir
@@ -309,10 +347,10 @@ def extract_and_install_update(zip_path, script_dir, app_name, logger):
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(extract_to_dir)
-        console.print("[green]✓[/green] Extraction successful!")
+        console.print("[green][OK][/green] Extraction successful!")
     except zipfile.BadZipFile:
         logger.error("Failed to extract the zip file (it might be corrupted).")
-        console.print("[red]✗[/red] Failed to extract the zip file")
+        console.print("[red][FAIL][/red] Failed to extract the zip file")
         return False
 
     console.print("[bold yellow]Installing new files...[/bold yellow]")
@@ -339,19 +377,19 @@ def extract_and_install_update(zip_path, script_dir, app_name, logger):
             else:
                 shutil.copy2(src_path, dest_path)
             logger.info(f"Updated: {item}")
-            update_table.add_row(item, "✓ Updated")
+            update_table.add_row(item, "[OK] Updated")
             success_count += 1
         except Exception as e:
             logger.error(f"Failed to update {item}: {e}")
-            update_table.add_row(item, f"✗ Failed: {str(e)}")
+            update_table.add_row(item, f"[FAIL] Failed: {str(e)}")
     
     console.print(update_table)
     
     if success_count == total_count:
-        console.print(f"[green]✓[/green] Successfully updated {success_count} items")
+        console.print(f"[green][OK][/green] Successfully updated {success_count} items")
         return True
     else:
-        console.print(f"[red]✗[/red] Failed to update {total_count - success_count} out of {total_count} items")
+        console.print(f"[red][FAIL][/red] Failed to update {total_count - success_count} out of {total_count} items")
         return False
 
 def restore_backup(backup_dir, script_dir, app_name):
@@ -377,9 +415,9 @@ def restore_backup(backup_dir, script_dir, app_name):
                 shutil.copytree(src_path, dest_path)
             else:
                 shutil.copy2(src_path, dest_path)
-            restore_table.add_row(item, "✓ Restored")
+            restore_table.add_row(item, "[OK] Restored")
         except Exception as e:
-            restore_table.add_row(item, f"✗ Failed: {str(e)}")
+            restore_table.add_row(item, f"[FAIL] Failed: {str(e)}")
     
     console.print(restore_table)
 
