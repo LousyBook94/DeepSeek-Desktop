@@ -9,6 +9,7 @@ def build_updater(script_dir, output_dir):
     Builds the auto-update.py script into a standalone executable.
     """
     auto_update_script = os.path.join(script_dir, "auto_update.py")
+    icon_path = os.path.join(os.path.dirname(script_dir), "deepseek.ico")
     if not os.path.exists(auto_update_script):
         print(f"Error: auto_update.py not found in {script_dir}")
         return False
@@ -21,6 +22,7 @@ def build_updater(script_dir, output_dir):
         "pyinstaller",
         "--onefile",
         "--name", "auto-updater",
+        f"--icon={icon_path}",
         "--distpath", output_dir,
         "--workpath", os.path.join(script_dir, "build_updater_temp"),
         "--specpath", os.path.join(script_dir, "build_updater_temp"),

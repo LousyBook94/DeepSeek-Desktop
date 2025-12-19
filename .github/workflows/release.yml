@@ -3,15 +3,16 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1.66"
+  VERSION: "0.1.67"
   RELEASE_BODY: |
     🚀 V__VERSION__ released yayyyyyy!!!! ✨
     
     ### What's new
+    - ✨ High-quality App Icons (Crisp at all sizes!)
+    - 🔄 Improved Refresh Button (Redirects to Home)
+    - 📦 Enhanced Update Checking UI (Overlay + Toasts)
+    - 🧹 Project Cleanup & Optimizations
     - Integrated In-UI Auto-Updater 🚀 (hopefully, at least partially) @vanja-san #21
-    - Modern Notification Banner
-    - Robust Codebase Refactor
-    - Manual Update Shortcut (Ctrl+Shift+U)
 
 jobs:
   build-and-release:

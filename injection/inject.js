@@ -211,6 +211,68 @@ const injectStyles = () => {
             top: 15px !important;
             right: 50px !important;
         }
+
+        /* --- Checking for Updates Overlay --- */
+        #ds-checking-overlay {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            z-index: 10001;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            padding: 8px 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            color: #fff;
+            pointer-events: auto;
+        }
+
+        #ds-checking-overlay.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #ds-checking-overlay .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top: 2px solid #4d6bfe;
+            border-radius: 50%;
+            animation: ds-spin 0.8s linear infinite;
+        }
+
+        /* --- Toast Notification --- */
+        #ds-toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10002;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ds-toast {
+            background: rgba(30, 30, 30, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transform: translateX(150%);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .ds-toast.visible {
+            transform: translateX(0);
+        }
     `;
     document.head.appendChild(style);
 };
@@ -251,7 +313,7 @@ const UIManager = {
         const btn = wrapper.querySelector('#ds-refresh-btn');
         btn.addEventListener('click', () => {
             btn.querySelector('svg').classList.add('ds-spin');
-            setTimeout(() => window.location.reload(), 500);
+            setTimeout(() => window.location.href = 'https://chat.deepseek.com', 500);
         });
 
         document.body.appendChild(wrapper);
@@ -292,6 +354,52 @@ const UIManager = {
             banner.classList.remove('visible');
             setTimeout(() => banner.remove(), 600);
         });
+    },
+
+    showCheckingOverlay() {
+        const overlay = document.createElement('div');
+        overlay.id = 'ds-checking-overlay';
+        overlay.innerHTML = `
+            <div class="spinner"></div>
+            <div style="font-size: 13px; font-weight: 500;">Checking for updates...</div>
+            <div id="ds-close-checking" style="margin-left: 8px; cursor: pointer; opacity: 0.5; font-size: 18px;">&times;</div>
+        `;
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.classList.add('visible'), 100);
+
+        overlay.querySelector('#ds-close-checking').onclick = () => {
+            overlay.classList.remove('visible');
+            setTimeout(() => overlay.remove(), 500);
+        };
+        return overlay;
+    },
+
+    hideCheckingOverlay() {
+        const overlay = document.getElementById('ds-checking-overlay');
+        if (overlay) {
+            overlay.classList.remove('visible');
+            setTimeout(() => overlay.remove(), 500);
+        }
+    },
+
+    showToast(message) {
+        let container = document.getElementById('ds-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'ds-toast-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'ds-toast';
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(() => toast.classList.add('visible'), 10);
+        setTimeout(() => {
+            toast.classList.remove('visible');
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
     }
 };
 
@@ -307,26 +415,39 @@ const VersionManager = {
         try {
             this.currentVersion = await window.pywebview.api.get_version();
             this.updateFooters();
-            this.checkForUpdates();
+            this.checkForUpdates(false, true);
         } catch (e) {
             console.error("VersionManager init failed", e);
         }
     },
 
-    async checkForUpdates(isManual = false) {
+    async checkForUpdates(isManual = false, isStartup = false) {
         if (!window.pywebview || !window.pywebview.api) return;
+
+        let overlay = null;
+        if (isStartup || isManual) {
+            overlay = UIManager.showCheckingOverlay();
+        }
 
         try {
             const result = await window.pywebview.api.check_for_update();
+            if (overlay) UIManager.hideCheckingOverlay();
+
             if (result.status === "success") {
                 const shouldShow = result.need_update || (isManual && !result.is_frozen);
                 if (shouldShow) {
                     const displayVersion = result.latest_version || "1.1.0-dev";
                     UIManager.showUpdateBanner(displayVersion);
+                } else if (isManual || isStartup) {
+                    UIManager.showToast("No updates found");
                 }
+            } else if (isManual || isStartup) {
+                UIManager.showToast("Update check failed");
             }
         } catch (e) {
             console.error("Update check failed", e);
+            if (overlay) UIManager.hideCheckingOverlay();
+            if (isManual || isStartup) UIManager.showToast("Error checking updates");
         }
     },
 
