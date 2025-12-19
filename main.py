@@ -393,7 +393,8 @@ def launch_auto_updater():
         search_locations = [
             os.getcwd(),  # Current working directory
             os.path.join(os.path.dirname(__file__), 'build'),  # build/ directory
-            os.path.join(os.path.dirname(__file__), 'utils')  # utils/ directory
+            os.path.join(os.path.dirname(__file__), 'utils'),  # utils/ directory
+            os.path.dirname(sys.executable)  # Directory of the frozen executable
         ]
         
         # Define possible updater names
