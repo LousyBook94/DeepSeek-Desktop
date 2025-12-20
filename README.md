@@ -38,7 +38,8 @@
 
 * ⏰ **Dynamic Greetings**
   * Good Morning/Afternoon/Evening messages
-  * Smooth fade transitions
+  * **500+ unique greetings** with random display
+  * Smooth fade transitions and typing animations
 
 * ✨ **Animations**
   * Typing animation with sphere cursor

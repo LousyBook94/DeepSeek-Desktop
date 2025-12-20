@@ -278,6 +278,34 @@ const injectStyles = () => {
         .ds-toast.visible {
             transform: translateX(0);
         }
+
+        /* --- Greetings Loading & Error States --- */
+        #ds-greetings-loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 0.8em;
+            color: #888;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #ds-greetings-loading.visible {
+            opacity: 1;
+        }
+
+        #ds-greetings-error {
+            margin-top: 8px;
+            font-size: 0.8em;
+            color: #ff6b6b;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #ds-greetings-error.visible {
+            opacity: 1;
+        }
     `;
     document.head.appendChild(style);
 };
@@ -475,19 +503,60 @@ const VersionManager = {
 };
 
 const GreetingManager = {
-    // The Icon SVG string provided
+    // Icon SVG
     logoSvg: `<svg class="ds-hero-logo" width="56" height="42" viewBox="0 0 35 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block; margin-bottom: 8px;"><g clip-path="url(#clip0_4892_24313)"><path d="M26.5542 4.34393C26.2719 4.20592 26.1506 4.46928 25.9856 4.60268C25.9292 4.64581 25.8815 4.70216 25.8338 4.75391C25.4215 5.19438 24.9396 5.48361 24.3105 5.44911C23.3905 5.39736 22.605 5.68659 21.9104 6.39041C21.7626 5.52271 21.2721 5.00462 20.5258 4.67226C20.1353 4.49976 19.7403 4.32668 19.4666 3.95119C19.2757 3.68381 19.2234 3.38595 19.1279 3.09211C19.0669 2.91501 19.0066 2.73388 18.8024 2.7034C18.5811 2.6689 18.4942 2.85463 18.4074 3.00989C18.0601 3.6447 17.9255 4.34393 17.9388 5.05235C17.9692 6.64572 18.642 7.91478 19.9789 8.81756C20.1307 8.92106 20.1698 9.02457 20.1221 9.1758C20.0307 9.48688 19.9226 9.78876 19.8271 10.0998C19.7662 10.2982 19.6753 10.3419 19.4626 10.2551C18.7288 9.94862 18.0952 9.49493 17.5351 8.94694C16.5846 8.02749 15.7249 7.01258 14.6531 6.21791C14.4013 6.03218 14.1494 5.85967 13.8889 5.69522C12.7952 4.63316 14.0321 3.76086 14.3185 3.65736C14.618 3.54925 14.4225 3.17779 13.4548 3.18239C12.487 3.18642 11.6015 3.51073 10.4727 3.94256C10.3077 4.00754 10.1341 4.05469 9.95637 4.09379C8.93227 3.89944 7.86849 3.85631 6.75755 3.98167C4.66564 4.21455 2.99464 5.20358 1.7664 6.89183C0.290908 8.92106 -0.0564026 11.2269 0.368535 13.6316C0.815324 16.1663 2.10911 18.2645 4.09695 19.905C6.15838 21.6059 8.53263 22.4397 11.2415 22.2799C12.8867 22.185 14.7181 21.9648 16.7841 20.2161C17.3051 20.4755 17.8519 20.579 18.7587 20.6566C19.4574 20.7216 20.1302 20.6221 20.6511 20.514C21.4671 20.3415 21.4107 19.5859 21.1157 19.4473C18.7242 18.3335 19.2492 18.7866 18.772 18.4198C19.987 16.9822 21.8431 14.4269 22.4158 10.9474C22.4722 10.5633 22.5441 10.0222 22.5355 9.71114C22.5309 9.52138 22.5746 9.44778 22.7913 9.42593C23.3905 9.35693 23.9718 9.19305 24.506 8.89921C26.0557 8.05279 26.6808 6.6624 26.828 4.996C26.8498 4.74126 26.8234 4.47791 26.5542 4.34393ZM13.0511 19.3438C10.7332 17.5216 9.60906 16.9219 9.14502 16.9477C8.71089 16.9736 8.78909 17.4704 8.88454 17.7942C8.98459 18.1139 9.11455 18.3341 9.29683 18.6147C9.42276 18.8004 9.50959 19.0764 9.1709 19.284C8.42453 19.7458 7.12671 19.1288 7.06576 19.0983C5.55519 18.2087 4.29245 17.0346 3.40233 15.4285C2.54268 13.8829 2.04356 12.2245 1.96133 10.4546C1.93948 10.0274 2.06541 9.87617 2.49092 9.79854C3.05099 9.69504 3.62831 9.67319 4.1878 9.75541C6.55342 10.101 8.56713 11.1585 10.2554 12.8341C11.2191 13.788 11.9482 14.9283 12.6992 16.0421C13.4979 17.2249 14.357 18.3519 15.4512 19.276C15.8377 19.5997 16.1459 19.8458 16.4408 20.0275C15.5513 20.127 14.0666 20.1483 13.0511 19.345V19.3438ZM14.162 12.1981C14.162 12.0083 14.3139 11.8571 14.5048 11.8571C14.5479 11.8571 14.587 11.8657 14.6221 11.8784C14.6698 11.8956 14.7135 11.9215 14.748 11.9606C14.8089 12.021 14.8434 12.1072 14.8434 12.1981C14.8434 12.3878 14.6916 12.5391 14.5007 12.5391C14.3098 12.5391 14.162 12.3878 14.162 12.1981ZM17.6127 13.968C17.3913 14.0588 17.17 14.1365 16.9572 14.1451C16.6271 14.1623 16.2672 14.0284 16.0717 13.8645C15.7681 13.6098 15.5507 13.4671 15.4599 13.0227C15.4208 12.8329 15.4426 12.5391 15.4771 12.3706C15.5553 12.0078 15.4685 11.7749 15.2126 11.5633C15.0045 11.3908 14.7394 11.343 14.4484 11.343C14.3397 11.343 14.2403 11.2953 14.1661 11.2568C14.0447 11.1964 13.9447 11.0452 14.0401 10.8594C14.0706 10.7991 14.2184 10.6524 14.2529 10.6266C14.6479 10.4017 15.1034 10.4753 15.5248 10.6438C15.9153 10.8037 16.2108 11.0969 16.6358 11.5115C17.0699 12.0124 17.1481 12.1504 17.3954 12.5264C17.5909 12.8203 17.7686 13.1221 17.8905 13.4677C17.9641 13.6834 17.8686 13.8599 17.6127 13.968Z" fill="var(--dsw-alias-brand-primary, #4d6bfe)"></path></g><defs><clipPath id="clip0_4892_24313"><rect width="26.634" height="19.6" fill="white" transform="translate(0.199951 2.69922)"></rect></clipPath></defs></svg>`,
 
-    phrases: [
+    // Backup phrases (fallback if web loading fails)
+    backupPhrases: [
         "What can I do for you?", "Ready to create?", "Let's make magic.",
         "How may I assist?", "System online.", "Awaiting instructions."
     ],
+
+    // Dynamic phrases (loaded from GitHub, randomized)
+    phrases: [],
+    shuffledPhrases: [],
+
+    // State management
+    isLoading: false,
+    hasError: false,
+    loadingElement: null,
+    greetingContainer: null,
+
+    // Configuration
+    config: {
+        github: {
+            apiUrl: 'https://api.github.com/repos/LousyBook94/DeepSeek-Desktop/contents/greetings.txt',
+            rawUrl: 'https://raw.githubusercontent.com/LousyBook94/DeepSeek-Desktop/refs/heads/master/greetings.txt'
+        },
+        cache: {
+            key: 'deepseek-greetings-cache',
+            dataKey: 'greetings'
+        }
+    },
 
     getTimeGreeting() {
         const h = new Date().getHours();
         if (h < 12) return "Good Morning";
         if (h < 18) return "Good Afternoon";
         return "Good Evening";
+    },
+
+    // Fisher-Yates shuffle algorithm for true randomness
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    },
+
+    // Update shuffled greetings when phrases array changes
+    updateShuffledPhrases() {
+        if (this.phrases.length > 0) {
+            this.shuffledPhrases = this.shuffleArray(this.phrases);
+            console.log(`DeepSeek Greetings: Shuffled ${this.shuffledPhrases.length} phrases for random display`);
+        }
     },
 
     init(element) {
@@ -517,36 +586,297 @@ const GreetingManager = {
             </div>
         `;
 
+        // Initialize dynamic greeting system
+        this.initDynamicGreetingSystem(element);
+
+        // Start typing with current phrases
         this.startTyping(element.querySelector('#ds-typewriter'));
         element.dataset.dsGreeting = 'true';
     },
 
     startTyping(element) {
+        // Ensure we have shuffled phrases
+        if (this.shuffledPhrases.length === 0) {
+            this.updateShuffledPhrases();
+        }
+
         let phraseIdx = 0;
         let charIdx = 0;
         let isDeleting = false;
 
         const loop = () => {
-            const current = this.phrases[phraseIdx];
-            element.textContent = isDeleting
-                ? current.substring(0, charIdx - 1)
-                : current.substring(0, charIdx + 1);
+            const current = this.shuffledPhrases[phraseIdx] || this.phrases[0];
+
+            // Use Array.from() to properly handle Unicode characters (emojis)
+            const chars = Array.from(current);
+            const displayText = isDeleting
+                ? chars.slice(0, charIdx - 1).join('')
+                : chars.slice(0, charIdx + 1).join('');
+
+            element.textContent = displayText;
 
             charIdx += isDeleting ? -1 : 1;
 
             let speed = isDeleting ? 40 : 80;
 
-            if (!isDeleting && charIdx === current.length) {
+            if (!isDeleting && charIdx === chars.length) {
                 speed = 2500;
                 isDeleting = true;
             } else if (isDeleting && charIdx === 0) {
                 isDeleting = false;
-                phraseIdx = (phraseIdx + 1) % this.phrases.length;
+                phraseIdx = (phraseIdx + 1) % this.shuffledPhrases.length;
+
+                // Reshuffle when we've gone through all phrases
+                if (phraseIdx === 0) {
+                    this.updateShuffledPhrases();
+                }
                 speed = 500;
             }
             setTimeout(loop, speed);
         };
         setTimeout(loop, 300);
+    },
+
+    // Load greetings from GitHub API
+    async loadGreetingsFromWeb() {
+        try {
+            console.log("DeepSeek Greetings: Loading from GitHub...");
+            const response = await fetch(this.config.github.rawUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const text = await response.text();
+            const greetings = text.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+
+            if (greetings.length === 0) {
+                throw new Error('No greetings found in file');
+            }
+
+            console.log(`DeepSeek Greetings: Loaded ${greetings.length} greetings from GitHub`);
+            this.saveToCache(greetings);
+            return greetings;
+        } catch (error) {
+            console.error("DeepSeek Greetings: Failed to load from GitHub:", error);
+            throw error;
+        }
+    },
+
+    // Load greetings from localStorage cache
+    loadFromCache() {
+        try {
+            const cacheData = localStorage.getItem(this.config.cache.key);
+            if (!cacheData) {
+                console.log("DeepSeek Greetings: No cache found");
+                return null;
+            }
+
+            const parsed = JSON.parse(cacheData);
+            const greetings = parsed[this.config.cache.dataKey];
+
+            if (!Array.isArray(greetings) || greetings.length === 0) {
+                console.log("DeepSeek Greetings: Invalid cache data");
+                return null;
+            }
+
+            console.log(`DeepSeek Greetings: Loaded ${greetings.length} greetings from cache`);
+            return greetings;
+        } catch (error) {
+            console.error("DeepSeek Greetings: Cache read failed:", error);
+            return null;
+        }
+    },
+
+    // Save greetings to localStorage cache
+    saveToCache(greetings) {
+        try {
+            const cacheData = {
+                [this.config.cache.dataKey]: greetings,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(this.config.cache.key, JSON.stringify(cacheData));
+            console.log(`DeepSeek Greetings: Saved ${greetings.length} greetings to cache`);
+        } catch (error) {
+            console.error("DeepSeek Greetings: Cache save failed:", error);
+        }
+    },
+
+    // Show loading state
+    showLoadingState(container) {
+        this.hideLoadingState();
+
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'ds-greetings-loading';
+        loadingDiv.style.cssText = `
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            z-index: 10001;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            padding: 8px 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            color: #fff;
+            pointer-events: auto;
+            opacity: 0;
+        `;
+
+        loadingDiv.innerHTML = `
+            <div style="
+                width: 16px;
+                height: 16px;
+                border: 2px solid rgba(255,255,255,0.1);
+                border-top: 2px solid #4d6bfe;
+                border-radius: 50%;
+                animation: ds-spin 0.8s linear infinite;
+            "></div>
+            <div style="font-size: 13px; font-weight: 500;">Loading greetings...</div>
+            <div id="ds-close-greetings-loading" style="margin-left: 8px; cursor: pointer; opacity: 0.5; font-size: 18px;">&times;</div>
+        `;
+
+        document.body.appendChild(loadingDiv);
+        this.loadingElement = loadingDiv;
+
+        // Fade in
+        setTimeout(() => {
+            loadingDiv.style.opacity = '1';
+            loadingDiv.style.transform = 'translateX(-50%) translateY(0)';
+        }, 10);
+
+        // Add close functionality
+        loadingDiv.querySelector('#ds-close-greetings-loading').onclick = () => {
+            this.hideLoadingState();
+        };
+    },
+
+    // Hide loading state
+    hideLoadingState() {
+        if (this.loadingElement) {
+            this.loadingElement.style.opacity = '0';
+            this.loadingElement.style.transform = 'translateX(-50%) translateY(-100px)';
+            setTimeout(() => {
+                if (this.loadingElement && this.loadingElement.parentNode) {
+                    this.loadingElement.parentNode.removeChild(this.loadingElement);
+                }
+                this.loadingElement = null;
+            }, 500);
+        }
+    },
+
+    // Show error state
+    showErrorState(container) {
+        this.hideLoadingState();
+
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'ds-greetings-error';
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            z-index: 10001;
+            background: rgba(220, 53, 69, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            padding: 8px 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            color: #fff;
+            pointer-events: auto;
+            opacity: 0;
+        `;
+
+        errorDiv.innerHTML = `
+            <div style="
+                width: 16px;
+                height: 16px;
+                border: 2px solid rgba(255,255,255,0.2);
+                border-top: 2px solid #ff6b6b;
+                border-radius: 50%;
+                animation: ds-spin 0.8s linear infinite;
+            "></div>
+            <div style="font-size: 13px; font-weight: 500;">Failed to load greetings 😢</div>
+            <div id="ds-close-greetings-error" style="margin-left: 8px; cursor: pointer; opacity: 0.5; font-size: 18px;">&times;</div>
+        `;
+
+        document.body.appendChild(errorDiv);
+
+        // Fade in
+        setTimeout(() => {
+            errorDiv.style.opacity = '1';
+            errorDiv.style.transform = 'translateX(-50%) translateY(0)';
+        }, 10);
+
+        // Add close functionality
+        errorDiv.querySelector('#ds-close-greetings-error').onclick = () => {
+            errorDiv.style.opacity = '0';
+            errorDiv.style.transform = 'translateX(-50%) translateY(-100px)';
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            }, 500);
+        };
+
+        // Auto-hide after 8 seconds
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.style.opacity = '0';
+                errorDiv.style.transform = 'translateX(-50%) translateY(-100px)';
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.parentNode.removeChild(errorDiv);
+                    }
+                }, 500);
+            }
+        }, 8000);
+    },
+
+    // Initialize dynamic greeting system
+    async initDynamicGreetingSystem(element) {
+        this.greetingContainer = element;
+
+        // Start with backup greetings immediately
+        this.phrases = [...this.backupPhrases];
+
+        // Try to load from cache first
+        const cachedGreetings = this.loadFromCache();
+        if (cachedGreetings) {
+            this.phrases = cachedGreetings;
+            this.updateShuffledPhrases(); // Also shuffle cached greetings
+            console.log("DeepSeek Greetings: Using cached greetings");
+        }
+
+        // Show loading state and fetch from web
+        this.showLoadingState(element);
+        this.isLoading = true;
+
+        try {
+            const webGreetings = await this.loadGreetingsFromWeb();
+            this.phrases = webGreetings;
+            this.updateShuffledPhrases(); // Update shuffled phrases when new greetings are loaded
+            this.hasError = false;
+            console.log("DeepSeek Greetings: Successfully loaded from web");
+        } catch (error) {
+            this.hasError = true;
+            this.showErrorState(element);
+            console.log("DeepSeek Greetings: Using backup greetings due to error");
+        } finally {
+            this.isLoading = false;
+            this.hideLoadingState();
+        }
     }
 };
 
