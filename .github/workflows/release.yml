@@ -50,7 +50,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: DeepSeekChat-windows
-        path: zipped/DeepSeekChat-windows.zip
+        path: built/
         retention-days: 30
         compression-level: 9
         

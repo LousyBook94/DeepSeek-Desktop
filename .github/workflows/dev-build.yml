@@ -28,14 +28,10 @@ jobs:
     - name: Build application
       run: python build.py --fresh
 
-    - name: Create dev build zip
-      run: |
-        New-Item -ItemType Directory -Path .\zipped -Force
-        Compress-Archive -Path .\built\* -DestinationPath .\zipped\DeepSeekChat-dev-windows.zip -Force
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: DeepSeekChat-dev-windows
-        path: zipped/DeepSeekChat-dev-windows.zip
+        path: built/
         retention-days: 30
         compression-level: 9
