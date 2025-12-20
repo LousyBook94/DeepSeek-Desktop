@@ -3,12 +3,20 @@ name: Release Build
 on: workflow_dispatch
 
 env:
-  VERSION: "0.1.68"
+  VERSION: "0.1.69"
   RELEASE_BODY: |
     🚀 V__VERSION__ released yayyyyyy!!!! ✨
     
     ### What's new
-    - 🔧 Fixed updater not working in frozen mode (probably)
+    - 🔧 **FINALLY fixed Unicode encoding errors in auto-updater!**
+    - 🐛 Resolved charmap codec crashes when Unicode characters appear in GitHub API responses
+    - 🔧 Enhanced subprocess launch with proper UTF-8 environment inheritance
+    - 🛡️ Added comprehensive Unicode sanitization for all release info fields
+    - 📝 Strengthened console initialization and logging with UTF-8 support
+    
+    ### Technical Details
+    - Fixed issue where updater subprocess doesn't properly inherit UTF-8 encoding when launched from built executable
+    - Closes #21 - Thanks to @vanja-san for the help!
 
 jobs:
   build-and-release:

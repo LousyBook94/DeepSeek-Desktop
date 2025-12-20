@@ -10,6 +10,8 @@
 **⚠️ Note:** This project is still under active development. Expect more crazy features soon!
 > Sorry i've been away for a while, but now i'm back working on the project, did some epic improvements and fixed old bugs!
 
+> Versions less than 0.1.69 have a horrendously buggy updator and is non gui based, please update if you're on older versions.
+
 > Bugs or suggestions? Drop them in [issues](https://github.com/LousyBook94/DeepSeek-Desktop/issues) 💀🔥
 
 ![DeepSeek Desktop Preview](assets/preview.png)
