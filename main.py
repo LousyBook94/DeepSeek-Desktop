@@ -593,13 +593,22 @@ def launch_auto_updater():
         
         if updater_path:
             try:
+                # Prepare UTF-8 environment for subprocess
+                env = os.environ.copy()
+                env['PYTHONIOENCODING'] = 'utf-8'
+                env['PYTHONLEGACYWINDOWSSTDIO'] = '0'  # Ensure UTF-8 stdio on Windows
+                
                 if updater_type == 'executable':
-                    # Launch executable directly
-                    subprocess.Popen([updater_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    # Launch executable with UTF-8 environment
+                    subprocess.Popen([updater_path], 
+                                   creationflags=subprocess.CREATE_NEW_CONSOLE,
+                                   env=env)
                     _log(f"Launched auto-updater executable: {updater_path}")
                 else:  # script
-                    # Launch Python script with appropriate flags
-                    subprocess.Popen([sys.executable, updater_path, '--auto', '--debug'], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    # Launch Python script with appropriate flags and UTF-8 environment
+                    subprocess.Popen([sys.executable, updater_path, '--auto', '--debug'], 
+                                   creationflags=subprocess.CREATE_NEW_CONSOLE,
+                                   env=env)
                     _log(f"Launched auto-updater script: {updater_path}")
             except Exception as launch_error:
                 error_msg = f"Failed to launch auto-updater: {launch_error}"

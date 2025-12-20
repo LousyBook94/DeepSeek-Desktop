@@ -17,7 +17,7 @@ def build_updater(script_dir, output_dir):
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
-    # PyInstaller command
+    # PyInstaller command with UTF-8 encoding support
     pyinstaller_cmd = [
         "pyinstaller",
         "--onefile",
@@ -26,6 +26,11 @@ def build_updater(script_dir, output_dir):
         "--distpath", output_dir,
         "--workpath", os.path.join(script_dir, "build_updater_temp"),
         "--specpath", os.path.join(script_dir, "build_updater_temp"),
+        # Ensure UTF-8 encoding support is included
+        "--hidden-import", "encodings.utf_8",
+        "--hidden-import", "encodings.ascii",
+        "--hidden-import", "encodings.cp1252",
+        "--hidden-import", "codecs",
         auto_update_script
     ]
 

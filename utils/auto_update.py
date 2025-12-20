@@ -92,6 +92,19 @@ console = SafeConsole()
 
 def setup_logging(script_dir):
     """Set up logging to file and console with UTF-8 encoding"""
+    # Ensure UTF-8 environment is set before any logging operations
+    if platform.system() == "Windows":
+        os.environ['PYTHONIOENCODING'] = 'utf-8'
+        os.environ['PYTHONLEGACYWINDOWSSTDIO'] = '0'
+        
+        # Force reconfigure of stdout/stderr with UTF-8
+        try:
+            if hasattr(sys.stdout, 'reconfigure'):
+                sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+                sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+        except (AttributeError, Exception):
+            pass
+    
     log_path = os.path.join(script_dir, "update.log")
     
     # Create custom formatter that handles Unicode
@@ -124,7 +137,10 @@ def setup_logging(script_dir):
         handlers=[file_handler, console_handler],
         force=True
     )
-    return logging.getLogger()
+    
+    logger = logging.getLogger()
+    logger.info(f"Logging initialized with UTF-8 encoding support")
+    return logger
 
 def get_current_version(script_dir):
     """Reads current version from the VERSION_FILE."""
@@ -262,20 +278,57 @@ class UpdateChecker:
         latest_version, release_info = fetch_latest_version_with_retry(self.logger)
         return latest_version, release_info
 
-    def sanitize_release_notes(self, release_body):
-        """Sanitize release notes to handle Unicode characters safely"""
-        if not release_body:
+    def sanitize_text_field(self, text, field_name="text"):
+        """Sanitize any text field to handle Unicode characters safely"""
+        if not text:
             return ""
         
+        if not isinstance(text, str):
+            # Convert non-string types to string first
+            text = str(text)
+        
         try:
-            # Test if the text can be encoded safely
-            release_body.encode('ascii')
-            return release_body
+            # Test if the text can be encoded safely as ASCII
+            text.encode('ascii')
+            return text
         except UnicodeEncodeError:
             # Replace problematic characters with ASCII equivalents
-            sanitized = release_body.encode('ascii', errors='replace').decode('ascii')
-            self.logger.info("Release notes contained Unicode characters, sanitized for display")
+            sanitized = text.encode('ascii', errors='replace').decode('ascii')
+            self.logger.debug(f"{field_name} contained Unicode characters, sanitized for display")
             return sanitized
+
+    def sanitize_release_notes(self, release_body):
+        """Sanitize release notes to handle Unicode characters safely"""
+        return self.sanitize_text_field(release_body, "release notes")
+
+    def sanitize_release_info(self, release_info):
+        """Sanitize all fields in release info to handle Unicode characters safely"""
+        if not release_info:
+            return release_info
+        
+        sanitized_info = {}
+        for key, value in release_info.items():
+            if isinstance(value, str):
+                sanitized_info[key] = self.sanitize_text_field(value, f"release_info.{key}")
+            elif isinstance(value, list):
+                # Handle lists of assets or other items
+                sanitized_list = []
+                for item in value:
+                    if isinstance(item, dict):
+                        sanitized_item = {}
+                        for item_key, item_value in item.items():
+                            if isinstance(item_value, str):
+                                sanitized_item[item_key] = self.sanitize_text_field(item_value, f"release_info.{key}.{item_key}")
+                            else:
+                                sanitized_item[item_key] = item_value
+                        sanitized_list.append(sanitized_item)
+                    else:
+                        sanitized_list.append(item)
+                sanitized_info[key] = sanitized_list
+            else:
+                sanitized_info[key] = value
+        
+        return sanitized_info
 
     def check_for_update(self, script_dir):
         current = self.get_local_version(script_dir)
@@ -283,9 +336,9 @@ class UpdateChecker:
         if not latest:
             return False, current, None, None
         
-        # Sanitize release notes to prevent encoding issues
-        if info and "body" in info:
-            info["body"] = self.sanitize_release_notes(info["body"])
+        # Sanitize all release info to prevent encoding issues
+        if info:
+            info = self.sanitize_release_info(info)
         
         need_update = not compare_versions(current, latest)
         return need_update, current, latest, info
