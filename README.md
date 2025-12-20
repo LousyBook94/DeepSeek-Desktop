@@ -33,45 +33,37 @@
 **DeepSeek Desktop** comes loaded with enhancements to make your chat experience 💯:
 
 * 🎨 **Custom UI Elements**
-
   * Custom footer text
   * Forced **Inter font** throughout
 
 * ⏰ **Dynamic Greetings**
-
   * Good Morning/Afternoon/Evening messages
   * Smooth fade transitions
 
 * ✨ **Animations**
-
   * Typing animation with sphere cursor
   * Self-healing UI via MutationObservers
 
 * 🧹 **Clean Interface**
-
   * Removed cluttered UI elements
   * Persistent styling across navigation
 
 * 🌙 **Dark Titlebar Support**
-
   * Matches your Windows system theme automatically
   * Manual override available
 
 * 🔃 **Integrated Auto Updater**
-
   * **In-UI Notifications**: Sleek glassmorphic banner when a new version is available
   * **One-Click Update**: Restart and update directly from the app
   * **Manual Check**: Press **Ctrl+Shift+U** to trigger a check anytime
 
 * 🔄 **Real-time Sync & Navigation**
-
   * Frosted glass refresh button with auto-hide
   * URL path preserved on refresh
   * Smooth loading indicators & popups
   * Welcome tooltip for first-time guidance
-
+  
 * 📝 **Enhanced Markdown Rendering**
-
   * Full markdown support in messages
   * System theme detection for code blocks
   * JetBrains Mono for code readability
@@ -96,6 +88,15 @@
   * **Export Options**: Save logs to timestamped text files or copy to clipboard
 
 ---
+
+## 📸 Screenshots
+
+![DeepSeek Desktop Preview](assets/1.png)
+![DeepSeek Desktop Preview](assets/2.png)
+![DeepSeek Desktop Preview](assets/3.png)
+![DeepSeek Desktop Preview](assets/4.png)
+
+
 
 ## 🔧 Advanced Usage
 

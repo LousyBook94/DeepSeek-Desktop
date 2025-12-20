@@ -212,6 +212,11 @@ const injectStyles = () => {
             right: 50px !important;
         }
 
+        /* --- Force Style for ._519be07 .ds-icon-button --- */
+        ._519be07 .ds-icon-button {
+            right: 50px;
+        }
+
         /* --- Checking for Updates Overlay --- */
         #ds-checking-overlay {
             position: fixed;
@@ -553,10 +558,10 @@ const MarkdownManager = {
         const renderer = new window.marked.Renderer();
         const escapeHtml = (text) => {
             return text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
+                .replace(/&/g, '&')
+                .replace(/</g, '<')
+                .replace(/>/g, '>')
+                .replace(/"/g, '"')
                 .replace(/'/g, '&#039;');
         };
 
