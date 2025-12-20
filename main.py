@@ -16,6 +16,18 @@ import logging
 import queue
 import customtkinter as ctk
 
+# Fix Unicode encoding issues on Windows
+if platform.system() == "Windows":
+    # Set environment variable for UTF-8 encoding
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    # Reconfigure stdout/stderr to use UTF-8 if available
+    try:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except (AttributeError, Exception):
+        pass
+
 # For native Windows screenshots
 if platform.system() == "Windows":
     try:
@@ -36,6 +48,18 @@ VERBOSE_LOGS = True
 log_queue = queue.Queue()
 log_records = []
 
+def safe_print(text: str):
+    """Print text with Unicode encoding safety"""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        # Fallback: replace problematic characters
+        safe_text = text.encode('ascii', errors='replace').decode('ascii')
+        print(safe_text)
+    except Exception as e:
+        # Last resort: print error message
+        print(f"[Encoding Error: {str(e)}]")
+
 def _log(msg: str):
     global VERBOSE_LOGS, log_queue, log_records
     
@@ -49,8 +73,8 @@ def _log(msg: str):
     if len(log_records) > 1000:
         log_records = log_records[-1000:]
     
-    # Always print to console for visibility
-    print(msg)
+    # Always print to console for visibility with safe printing
+    safe_print(msg)
 
 # Windows-specific imports for dark titlebar
 if platform.system() == "Windows":

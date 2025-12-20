@@ -1,0 +1,13 @@
+2025-12-20 15:20:33,938 [INFO] Scanning directory: c:\Users\LousyBook01\Documents\Github\DeepSeek-Desktop
+2025-12-20 15:20:34,494 [ERROR] Unexpected error: 'charmap' codec can't encode character '\U0001f50d' in position 0: character maps to <undefined>
+2025-12-20 15:22:17,033 [INFO] Scanning directory: c:\Users\LousyBook01\Documents\Github\DeepSeek-Desktop
+2025-12-20 15:22:17,321 [ERROR] Unexpected error: 'charmap' codec can't encode character '\u2705' in position 39: character maps to <undefined>
+2025-12-20 15:24:10,577 [INFO] Scanning directory: c:\Users\LousyBook01\Documents\Github\DeepSeek-Desktop
+2025-12-20 15:24:11,090 [ERROR] Unexpected error: 'charmap' codec can't encode character '\U0001f680' in position 15: character maps to <undefined>
+2025-12-20 15:25:00,460 [INFO] Scanning directory: c:\Users\LousyBook01\Documents\Github\DeepSeek-Desktop
+2025-12-20 15:25:00,687 [ERROR] Unexpected error: 'charmap' codec can't encode character '\U0001f680' in position 15: character maps to <undefined>
+2025-12-20 15:26:18,277 [INFO] Scanning directory: c:\Users\LousyBook01\Documents\Github\DeepSeek-Desktop
+2025-12-20 15:26:18,664 [ERROR] Unexpected error: 'charmap' codec can't encode character '\U0001f680' in position 15: character maps to <undefined>
+2025-12-20 15:28:00,239 [INFO] Scanning directory: c:\Users\LousyBook01\Documents\Github\DeepSeek-Desktop
+2025-12-20 15:28:00,616 [ERROR] Unexpected error: 'charmap' codec can't encode character '\U0001f680' in position 40: character maps to <undefined>
+2025-12-20 15:29:09,263 [ERROR] Unexpected error: 'charmap' codec can't encode character '\U0001f680' in position 40: character maps to <undefined>

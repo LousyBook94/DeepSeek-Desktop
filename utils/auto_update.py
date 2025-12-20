@@ -9,6 +9,7 @@ import subprocess
 import time
 import re
 import argparse
+import platform
 from datetime import datetime
 from tqdm import tqdm
 import logging
@@ -22,6 +23,30 @@ from rich.layout import Layout
 from rich.live import Live
 from rich.align import Align
 from rich import box
+
+# Fix Unicode encoding issues on Windows
+if platform.system() == "Windows":
+    # Set environment variable for UTF-8 encoding
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    # Reconfigure stdout/stderr to use UTF-8 if available
+    try:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except (AttributeError, Exception):
+        pass
+
+def safe_print(text: str):
+    """Print text with Unicode encoding safety"""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        # Fallback: replace problematic characters
+        safe_text = text.encode('ascii', errors='replace').decode('ascii')
+        print(safe_text)
+    except Exception as e:
+        # Last resort: print error message
+        print(f"[Encoding Error: {str(e)}]")
 
 # --- Configuration ---
 APP_NAME = "DeepSeekChat.exe"
@@ -38,19 +63,66 @@ def get_script_directory():
     else:
         return os.path.dirname(os.path.abspath(__file__))
         
-# Initialize Rich console
-console = Console()
+# Initialize Rich console with Unicode safety
+class SafeConsole(Console):
+    def print(self, *args, **kwargs):
+        try:
+            super().print(*args, **kwargs)
+        except UnicodeEncodeError:
+            # Fallback: try to print with safe text
+            if args:
+                safe_args = []
+                for arg in args:
+                    if isinstance(arg, str):
+                        safe_arg = arg.encode('ascii', errors='replace').decode('ascii')
+                        safe_args.append(safe_arg)
+                    else:
+                        safe_args.append(arg)
+                try:
+                    super().print(*safe_args, **kwargs)
+                except Exception:
+                    # Last resort: print error
+                    safe_print("[Unicode display error - see log file for details]")
+            else:
+                safe_print("[Unicode display error - see log file for details]")
+        except Exception as e:
+            safe_print(f"[Console error: {str(e)}]")
+
+console = SafeConsole()
 
 def setup_logging(script_dir):
-    """Set up logging to file and console"""
+    """Set up logging to file and console with UTF-8 encoding"""
     log_path = os.path.join(script_dir, "update.log")
+    
+    # Create custom formatter that handles Unicode
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+    
+    # File handler with UTF-8 encoding
+    file_handler = logging.FileHandler(log_path, mode='w', encoding='utf-8')
+    file_handler.setFormatter(formatter)
+    
+    # Console handler with Unicode safety
+    class SafeStreamHandler(logging.StreamHandler):
+        def emit(self, record):
+            try:
+                super().emit(record)
+            except UnicodeEncodeError:
+                # Fallback: encode with replacement
+                safe_msg = self.format(record).encode('ascii', errors='replace').decode('ascii')
+                try:
+                    self.stream.write(safe_msg + self.terminator)
+                except Exception:
+                    # Last resort: skip the message
+                    pass
+    
+    console_handler = SafeStreamHandler()
+    console_handler.setFormatter(formatter)
+    
+    # Configure logging
     logging.basicConfig(
         level=logging.DEBUG,
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        handlers=[
-            logging.FileHandler(log_path, mode='w'),
-            logging.StreamHandler()
-        ]
+        handlers=[file_handler, console_handler],
+        force=True
     )
     return logging.getLogger()
 
@@ -190,11 +262,30 @@ class UpdateChecker:
         latest_version, release_info = fetch_latest_version_with_retry(self.logger)
         return latest_version, release_info
 
+    def sanitize_release_notes(self, release_body):
+        """Sanitize release notes to handle Unicode characters safely"""
+        if not release_body:
+            return ""
+        
+        try:
+            # Test if the text can be encoded safely
+            release_body.encode('ascii')
+            return release_body
+        except UnicodeEncodeError:
+            # Replace problematic characters with ASCII equivalents
+            sanitized = release_body.encode('ascii', errors='replace').decode('ascii')
+            self.logger.info("Release notes contained Unicode characters, sanitized for display")
+            return sanitized
+
     def check_for_update(self, script_dir):
         current = self.get_local_version(script_dir)
         latest, info = self.fetch_latest_info()
         if not latest:
             return False, current, None, None
+        
+        # Sanitize release notes to prevent encoding issues
+        if info and "body" in info:
+            info["body"] = self.sanitize_release_notes(info["body"])
         
         need_update = not compare_versions(current, latest)
         return need_update, current, latest, info
