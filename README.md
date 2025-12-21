@@ -18,6 +18,20 @@
 
 ---
 
+## 📖 Table of Contents
+
+- [💾 Installation](#-installation)
+- [✨ Features](#-features)
+- [📸 Screenshots](#-screenshots)
+- [🔧 Advanced Usage](#-advanced-usage)
+- [🔮 Future Plans](#-future-plans)
+- [👋 Connect with Me](#-connect-with-me)
+- [🤘 Cool Contributors](#-cool-contributors)
+- [🔧 Bots that help the project](#bots-that-help-the-project)
+- [⚡ Attribution](#-attribution)
+
+---
+
 ## 💾 Installation
 
 1. Head to the [Releases page](https://github.com/LousyBook94/DeepSeek-Desktop/releases)
